@@ -20,6 +20,7 @@ class authService {
   SESSION_COOKIE_NAME = "userAuthenticatedSession";
   SESSION_COOKIE_OPTIONS = {
     httpOnly: true,
+    maxAge: 900000, // Expires in 15 minutes
   };
 
   public async authenticate(ctx: Context): Promise<string> {
