@@ -1,7 +1,7 @@
 import {
   getAuthUrl,
   getUserData,
-  redirectUser,
+  authenticateUser,
 } from "@/controllers/authController";
 import Router from "@koa/router";
 import dotenv from "dotenv";
@@ -15,8 +15,8 @@ router.get(`${API_VERSION}/`, async (ctx: any) => {
   ctx.body = "Server is Running! 💨";
 });
 
-router.get("/auth", getAuthUrl);
-router.get("/redirect", redirectUser);
+router.get("/getAuthUrl", getAuthUrl);
+router.get("/authenticateUser", authenticateUser);
 router.get("/userData", getUserData);
 
 export default router;

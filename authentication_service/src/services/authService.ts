@@ -42,7 +42,7 @@ class authService {
     return url;
   }
 
-  public async setCredentials(ctx: Context): Promise<boolean> {
+  public async authenticateUser(ctx: Context): Promise<boolean> {
     const authCode = String(ctx.query.code);
     const sessionId = String(ctx.cookies.get(this.SESSION_COOKIE_NAME));
     const session = this.sessionData[sessionId];

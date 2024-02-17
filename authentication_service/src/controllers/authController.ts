@@ -11,8 +11,8 @@ async function getAuthUrl(ctx: Context) {
   ctx.body = { url };
 }
 
-async function redirectUser(ctx: Context) {
-  const result = await AuthService.setCredentials(ctx);
+async function authenticateUser(ctx: Context) {
+  const result = await AuthService.authenticateUser(ctx);
   if (!result) {
     ctx.body = { code: 401, msg: "User not authenticated." };
     return;
@@ -23,10 +23,10 @@ async function redirectUser(ctx: Context) {
 async function getUserData(ctx: Context) {
   const userData = await AuthService.getUserInfo(ctx);
   if (!userData) {
-    ctx.body = { code: 440, msg: "User session expired" };
+    ctx.body = { code: 401, msg: "Unauthorised Request" };
     return;
   }
   ctx.body = { code: 200, msg: "Successfully fetched user data", userData };
 }
 
-export { getAuthUrl, redirectUser, getUserData };
+export { getAuthUrl, authenticateUser, getUserData };
