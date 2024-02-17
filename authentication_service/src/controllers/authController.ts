@@ -4,9 +4,10 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const AuthService = new authService();
+const REDIRECT_URL = String(process.env.REDIRECT_URL);
 
-async function authenticateUser(ctx: Context) {
-  const url = await AuthService.authenticate(ctx);
+async function getAuthUrl(ctx: Context) {
+  const url = await AuthService.getAuthUrl(ctx);
   ctx.body = { url };
 }
 
@@ -16,7 +17,6 @@ async function redirectUser(ctx: Context) {
     ctx.body = { code: 401, msg: "User not authenticated." };
     return;
   }
-  const REDIRECT_URL = String(process.env.REDIRECT_URL);
   ctx.redirect(REDIRECT_URL);
 }
 
@@ -29,4 +29,4 @@ async function getUserData(ctx: Context) {
   ctx.body = { code: 200, msg: "Successfully fetched user data", userData };
 }
 
-export { authenticateUser, redirectUser, getUserData };
+export { getAuthUrl, redirectUser, getUserData };

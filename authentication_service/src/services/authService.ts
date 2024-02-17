@@ -23,7 +23,7 @@ class authService {
     maxAge: 900000, // Expires in 15 minutes
   };
 
-  public async authenticate(ctx: Context): Promise<string> {
+  public async getAuthUrl(ctx: Context): Promise<string> {
     const sessionId = crypto.randomUUID();
     const { codeChallenge, codeVerifier } = generatePkcePair();
     const { url, nonce } = sgid.authorizationUrl({

@@ -1,5 +1,5 @@
 import {
-  authenticateUser,
+  getAuthUrl,
   getUserData,
   redirectUser,
 } from "@/controllers/authController";
@@ -15,7 +15,7 @@ router.get(`${API_VERSION}/`, async (ctx: any) => {
   ctx.body = "Server is Running! 💨";
 });
 
-router.get("/auth", authenticateUser);
+router.get("/auth", getAuthUrl);
 router.get("/redirect", redirectUser);
 router.get("/userData", getUserData);
 
