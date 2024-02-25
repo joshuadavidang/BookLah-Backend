@@ -1,6 +1,7 @@
 import { authService } from "@/services/authService";
 import { Context } from "koa";
 import dotenv from "dotenv";
+import { ErrorsType } from "@/helpers/errors";
 dotenv.config();
 
 const AuthService = new authService();
@@ -14,7 +15,7 @@ async function getAuthUrl(ctx: Context) {
 async function authenticateUser(ctx: Context) {
   const result = await AuthService.authenticateUser(ctx);
   if (!result) {
-    ctx.body = { code: 401, msg: "User not authenticated." };
+    ctx.body = { code: 401, msg: ErrorsType.UNAUTHENTICATED_REQUEST };
     return;
   }
   ctx.redirect(REDIRECT_URL);
@@ -23,7 +24,7 @@ async function authenticateUser(ctx: Context) {
 async function getUserData(ctx: Context) {
   const userData = await AuthService.getUserInfo(ctx);
   if (!userData) {
-    ctx.body = { code: 401, msg: "Unauthorised Request" };
+    ctx.body = { code: 401, msg: ErrorsType.UNAUTHORISED_REQUEST };
     return;
   }
   ctx.body = { code: 200, msg: "Successfully fetched user data", userData };
