@@ -1,13 +1,16 @@
 import os
 import psycopg2
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 def getDbConnection():
     conn = psycopg2.connect(
         host="localhost",
-        database="shortensg-users",
-        user=os.environ["DB_USERNAME"],
-        password=os.environ["DB_PASSWORD"],
+        database=os.getenv("DATABASE"),
+        user=os.getenv("DB_USERNAME"),
+        password=os.getenv("DB_PASSWORD"),
     )
     return conn
 
@@ -21,31 +24,45 @@ cur.execute("CREATE TYPE concert_type_enum AS ENUM ('SOLO', 'GROUP');")
 cur.execute(
     "CREATE TABLE concerts (id serial PRIMARY KEY,"
     "performer varchar(50) NOT NULL,"
-    "concertName varchar(150) NOT NULL,"
-    "concertVenue varchar(150) NOT NULL,"
-    "concertDate varchar(150) NOT NULL,"
-    "concertCapacity integer NOT NULL,"
-    "concertType concert_type_enum NOT NULL,"
+    "title varchar(150) NOT NULL,"
+    "venue varchar(150) NOT NULL,"
+    "date varchar(150) NOT NULL,"
+    "time varchar(50) NOT NULL,"
+    "capacity integer NOT NULL,"
+    "type concert_type_enum NOT NULL,"
     "date_added date DEFAULT CURRENT_TIMESTAMP);"
 )
 
-cur.execute(
-    "INSERT INTO concerts (performer, concertName, concertVenue, concertDate, concertCapacity, concertType)"
-    "VALUES (%s, %s, %s, %s, %s, %s )",
-    (
-        "Ed Sheeran",
-        "Mathematics Tour",
-        "Singapore National Stadium",
-        "2024-03-01",
-        1000,
-        "SOLO",
-    ),
+
+def insert_concert(cur, performer, title, venue, date, time, capacity, concert_type):
+    script = """
+        INSERT INTO concerts (performer, title, venue, date, time, capacity, type)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+    """
+    values = (performer, title, venue, date, time, capacity, concert_type)
+    cur.execute(script, values)
+
+
+insert_concert(
+    cur,
+    "Ed Sheeran",
+    "Mathematics Tour",
+    "Singapore National Stadium",
+    "5 May 2024",
+    "8:00 PM",
+    1000,
+    "SOLO",
 )
 
-cur.execute(
-    "INSERT INTO concerts (performer, concertName, concertVenue, concertDate, concertCapacity, concertType)"
-    "VALUES (%s, %s, %s, %s, %s, %s )",
-    ("JJ Lin", "Concert Name", "SMU", "2024-03-01", 1000, "SOLO"),
+insert_concert(
+    cur,
+    "JJ Lin",
+    "JJ24 world tour",
+    "Singapore Sports Hub",
+    "3 Mar 2024",
+    "7:30 PM",
+    1000,
+    "SOLO",
 )
 
 conn.commit()

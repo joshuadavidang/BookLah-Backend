@@ -8,29 +8,25 @@ PORT = 5001
 CORS(app, supports_credentials=True)
 
 
-def fetch_data_as_json():
-    conn = init_db.getDbConnection()
-    cur = conn.cursor()
-    query = "SELECT * FROM concerts;"
-    cur.execute(query)
-    columns = [desc[0] for desc in cur.description]
-    rows = cur.fetchall()
-    data = []
-    for row in rows:
-        data.append(dict(zip(columns, row)))
-    cur.close()
-    conn.close()
-
-    return data
-
-
 @app.route("/getConcerts")
 def getConcerts():
-    data = fetch_data_as_json()
-    return (
-        jsonify({"code": 200, "message": "List of concerts fetched!", "data": data}),
-        200,
-    )
+    conn = init_db.getDbConnection()
+    cursor = conn.cursor()
+    query = "SELECT * FROM concerts;"
+    cursor.execute(query)
+
+    rows = cursor.fetchall()
+
+    if rows:
+        columns = [column[0] for column in cursor.description]
+        concerts = [{columns[i]: row[i] for i in range(len(columns))} for row in rows]
+        cursor.close()
+        conn.close()
+        return jsonify({"code": 200, "data": concerts}), 200
+
+    cursor.close()
+    conn.close()
+    return jsonify({"code": 404, "message": "Data not found"}), 404
 
 
 if __name__ == "__main__":
