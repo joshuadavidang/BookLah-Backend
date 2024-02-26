@@ -1,6 +1,7 @@
 import { AppDataSource } from "@/config/db";
 import { ErrorsType } from "@/helpers/errors";
 import User from "@/models/Users";
+import { UserType } from "@/types";
 
 class userService {
   public async isUserExist(userId: string) {
@@ -16,7 +17,8 @@ class userService {
   public async saveUserInformation(
     userId: string,
     name: string,
-    gender: string
+    gender: string,
+    userType: UserType
   ) {
     const result = await this.isUserExist(userId);
     if (result === null) {
@@ -24,6 +26,7 @@ class userService {
       newUser.userId = userId;
       newUser.name = name;
       newUser.gender = gender;
+      newUser.userType = userType;
       return AppDataSource.manager.save(newUser);
     } else {
       console.log(ErrorsType.USER_EXIST);
