@@ -15,11 +15,14 @@ def getConcerts():
     query = "SELECT * FROM concerts;"
     cursor.execute(query)
 
-    rows = cursor.fetchall()
+    concerts = cursor.fetchall()
 
-    if rows:
+    if concerts:
         columns = [column[0] for column in cursor.description]
-        concerts = [{columns[i]: row[i] for i in range(len(columns))} for row in rows]
+        concerts = [
+            {columns[i]: concert[i] for i in range(len(columns))}
+            for concert in concerts
+        ]
         cursor.close()
         conn.close()
         return jsonify({"code": 200, "data": concerts}), 200
