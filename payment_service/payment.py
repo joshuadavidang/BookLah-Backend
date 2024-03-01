@@ -20,7 +20,8 @@ YOUR_DOMAIN = 'http://localhost:5001'
 
 @app.route('/create-checkout-session', methods=['POST'])
 def create_checkout_session():
-    configure()
+    configure()    
+
     try:
         checkout_session = stripe.checkout.Session.create(
             line_items=[
@@ -36,26 +37,30 @@ def create_checkout_session():
             cancel_url=YOUR_DOMAIN + '/cancel.html',
         )
 
-        session_id = checkout_session.id
-        customer_email = checkout_session.get('customer_email')
-        session = stripe.checkout.Session.retrieve(session_id)
+        # session_id = checkout_session.id
+        # customer_email = checkout_session.get('customer_email')
+        # session = stripe.checkout.Session.retrieve(session_id)
         # print("email", customer_email)
-        session['customer_email'] = customer_email
+        # session['customer_email'] = customer_email
 
         # print('Generated Session ID:', session_id)
         # print("session", session)
 
-        app.logger.info('Generated Session ID: %s', session_id)
-        app.logger.info("Email: %s", customer_email)
-        app.logger.info("Session: %s", session)
+        # app.logger.info('Generated Session ID: %s', session_id)
+        # app.logger.info("Email: %s", customer_email)
+        # app.logger.info("Session: %s", session)
         
     except Exception as e:
         return str(e)
     
-    # return redirect(checkout_session.url, code=303)
-    return jsonify({"checkout_url": checkout_session.url})
+    return redirect(checkout_session.url, code=303)
+    # return jsonify({"checkout_url": checkout_session.url})
 
+@app.route('/session-status', methods=['GET'])
+def session_status():
+  session = stripe.checkout.Session.retrieve(request.args.get('session_id'))
 
+  return jsonify(status=session.status, customer_email=session.customer_details.email)
 
 # call notif, event qty
 
