@@ -1,10 +1,16 @@
 from flask import Flask, redirect, request, jsonify
-from os import environ
+from dotenv import load_dotenv
+import os
 
 import stripe
 
 app = Flask(__name__)
-app.config["STRIPE_SECRET_KEY"] = environ.get("api_key")
+
+def configure():
+    load_dotenv()
+
+app.config["STRIPE_PUBLIC_KEY"] = os.getenv("public_key")
+app.config["STRIPE_SECRET_KEY"] = os.getenv("secret_key")
 
 stripe.api_key = app.config["STRIPE_SECRET_KEY"]
 
@@ -14,6 +20,7 @@ YOUR_DOMAIN = 'http://localhost:5001'
 
 @app.route('/create-checkout-session', methods=['POST'])
 def create_checkout_session():
+    configure()
     try:
         checkout_session = stripe.checkout.Session.create(
             line_items=[
@@ -32,16 +39,21 @@ def create_checkout_session():
         session_id = checkout_session.id
         customer_email = checkout_session.get('customer_email')
         session = stripe.checkout.Session.retrieve(session_id)
-        print("email", customer_email)
+        # print("email", customer_email)
         session['customer_email'] = customer_email
 
-        print('Generated Session ID:', session_id)
-        print("session", session)
+        # print('Generated Session ID:', session_id)
+        # print("session", session)
+
+        app.logger.info('Generated Session ID: %s', session_id)
+        app.logger.info("Email: %s", customer_email)
+        app.logger.info("Session: %s", session)
         
     except Exception as e:
         return str(e)
     
-    return redirect(checkout_session.url, code=303)
+    # return redirect(checkout_session.url, code=303)
+    return jsonify({"checkout_url": checkout_session.url})
 
 
 
