@@ -1,0 +1,12 @@
+version: "3.8"
+
+
+services:
+
+  notification:
+    image: jcjc13/notification:1.0
+    restart: always
+    environment:
+      dbURL: mysql+mysqlconnector://is213@host.docker.internal:8889/notification
+
+
