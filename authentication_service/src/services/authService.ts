@@ -24,21 +24,33 @@ class authService {
   };
 
   public async getAuthUrl(ctx: Context): Promise<string> {
+    const userType = String(ctx.request.query.code);
+    const state = new URLSearchParams({
+      state: userType,
+    });
+
     const sessionId = crypto.randomUUID();
+
     const { codeChallenge, codeVerifier } = generatePkcePair();
+
     const { url, nonce } = sgid.authorizationUrl({
       codeChallenge,
+      state: state.toString(),
       scope: ["openid", "myinfo.name"],
     });
+
     this.sessionData[sessionId] = {
+      state,
       nonce,
       codeVerifier,
     };
+
     ctx.cookies.set(
       this.SESSION_COOKIE_NAME,
       sessionId,
       this.SESSION_COOKIE_OPTIONS
     );
+
     return url;
   }
 
@@ -81,6 +93,8 @@ class authService {
       accessToken,
       sub,
     });
+
+    userInfo.data.userType = session?.state?.get("state") || "";
 
     return userInfo;
   }
