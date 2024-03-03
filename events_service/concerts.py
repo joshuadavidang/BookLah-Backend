@@ -10,10 +10,11 @@ class Events(db.Model):
     performer = db.Column(db.String(50), nullable=False)
     title = db.Column(db.String(150), nullable=False)
     venue = db.Column(db.String(150), nullable=False)
-    date = db.Column(db.String(150), nullable=False)
-    time = db.Column(db.String(50), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    time = db.Column(db.Time, nullable=False)
     capacity = db.Column(db.Integer, nullable=False)
     description = db.Column(db.String(1000), nullable=False)
+    sold_out = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     created_by = db.Column(db.String(50), nullable=False)
 
@@ -46,7 +47,7 @@ class Events(db.Model):
             "title": self.title,
             "venue": self.venue,
             "date": self.date,
-            "time": self.time,
+            "time": self.time.strftime("%H:%M:%S"),
             "capacity": self.capacity,
             "description": self.description,
             "created_by": self.created_by,
