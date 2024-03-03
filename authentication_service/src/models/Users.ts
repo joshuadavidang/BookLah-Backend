@@ -1,3 +1,4 @@
+import { UserType } from "@/types";
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity()
@@ -13,4 +14,10 @@ export default class Users {
 
   @Column()
   gender: string;
+
+  @Column({
+    type: "enum",
+    enum: UserType,
+  })
+  userType: UserType;
 }
