@@ -9,4 +9,34 @@ services:
     environment:
       dbURL: mysql+mysqlconnector://is213@host.docker.internal:8889/notification
 
+    authentication:
+    image: jcjc13/authentication:1.0
+    restart: always
+    environment:
+      dbURL: mysql+mysqlconnector://is213@host.docker.internal:8889/authentication
+
+    booking:
+    image: jcjc13/booking:1.0
+    restart: always
+    environment:
+      dbURL: mysql+mysqlconnector://is213@host.docker.internal:8889/booking
+
+    error:
+    image: jcjc13/error:1.0
+    restart: always
+    environment:
+      dbURL: mysql+mysqlconnector://is213@host.docker.internal:8889/error
+
+    payment:
+    image: jcjc13/payment:1.0
+    restart: always
+    environment:
+      dbURL: mysql+mysqlconnector://is213@host.docker.internal:8889/payment
+
+    tracking:
+    image: jcjc13/tracking:1.0
+    restart: always
+    environment:
+      dbURL: mysql+mysqlconnector://is213@host.docker.internal:8889/tracking
+
 
