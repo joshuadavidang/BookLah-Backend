@@ -3,7 +3,7 @@ import pika
 from os import environ
 
 hostname = "localhost" 
-port = 5672            
+port = 5006            
 exchangename = "booking_topic" 
 exchangetype = "topic" 
 
