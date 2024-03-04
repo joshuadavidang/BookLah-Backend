@@ -16,7 +16,7 @@ stripe.api_key = app.config["STRIPE_SECRET_KEY"]
 
 app = Flask(__name__, static_url_path='', static_folder='./payment_test')
 
-YOUR_DOMAIN = 'http://localhost:5001'
+YOUR_DOMAIN = 'http://localhost:5002'
 
 @app.route('/create-checkout-session', methods=['POST'])
 def create_checkout_session():
@@ -66,4 +66,4 @@ def session_status():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5001, debug=True)
+    app.run(host="0.0.0.0", port=5002, debug=True)

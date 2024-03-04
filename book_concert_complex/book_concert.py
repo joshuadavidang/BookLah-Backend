@@ -105,7 +105,7 @@ def processBookConcert(booking):
 
 
     print('\n\n-----Invoking payment microservice-----')
-    payment_result = invoke_http(payment_URL, method="POST", json=booking_result['data'])
+    payment_result = invoke_http(payment_URL, method="POST")
     print("payment_result:", payment_result, '\n')
 
     code = payment_result["code"]
@@ -119,7 +119,7 @@ def processBookConcert(booking):
 
         return {
             "code": 500,
-            "data": {"booking_result": booking_result,
+            "data": {
                      "payment_result": payment_result},
             "message": "Simulated payment error sent for error handling."
         }
