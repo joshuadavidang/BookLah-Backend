@@ -74,17 +74,23 @@ def getConcert(concertid):
         db.select(Events).filter_by(concertid=concertid).limit(1)
     ).first()
 
-    if concert:
-        return jsonify({"code": 200, "data": concert.json()})
-    return jsonify({"code": 404, "message": "concert not found."}), 404
+    if not concert:
+        return jsonify({"code": 404, "message": "concert not found."}), 404
+
+    return jsonify({"code": 200, "data": concert.json()})
 
 
 @app.route("/getAdminCreatedConcert/<string:userId>")
 def getAdminCreatedConcert(userId):
+    """
+    To be called by admin only to retrieve the list of created concerts
+    """
+
     concerts = db.session.scalars(db.select(Events).filter_by(created_by=userId)).all()
-    if concerts:
-        return jsonify({"code": 200, "data": [concert.json() for concert in concerts]})
-    return jsonify({"code": 404, "message": "concert not found."}), 404
+    if not concerts:
+        return jsonify({"code": 404, "message": "concert not found."}), 404
+
+    return jsonify({"code": 200, "data": [concert.json() for concert in concerts]})
 
 
 @app.route("/addConcert/<string:concertid>", methods=["POST"])
@@ -127,42 +133,38 @@ def addConcert(concertid):
 @app.route("/deleteConcert/<string:concertid>", methods=["DELETE"])
 def deleteConcert(concertid):
     concert = db.session.query(Events).filter_by(concertid=concertid).first()
-    if concert:
-        try:
-            db.session.delete(concert)
-            db.session.commit()
-            return (
-                jsonify(
-                    {
-                        "code": 200,
-                        "data": {"concertid": concertid},
-                        "message": "Concert deleted successfully.",
-                    }
-                ),
-                200,
-            )
-        except:
-            # Error handling if deletion fails
-            return (
-                jsonify(
-                    {
-                        "code": 500,
-                        "data": {"concertid": concertid},
-                        "message": "An error occurred while deleting the concert.",
-                    }
-                ),
-                500,
-            )
-    else:
+    if not concert:
+        return jsonify(
+            {
+                "code": 404,
+                "data": {"concertid": concertid},
+                "message": "Concert not found.",
+            }
+        )
+
+    try:
+        db.session.delete(concert)
+        db.session.commit()
         return (
             jsonify(
                 {
-                    "code": 404,
+                    "code": 200,
                     "data": {"concertid": concertid},
-                    "message": "Concert not found.",
+                    "message": "Concert deleted successfully.",
                 }
             ),
-            404,
+            200,
+        )
+    except:
+        return (
+            jsonify(
+                {
+                    "code": 500,
+                    "data": {"concertid": concertid},
+                    "message": "An error occurred while deleting the concert.",
+                }
+            ),
+            500,
         )
 
 
