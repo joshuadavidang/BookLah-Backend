@@ -1,0 +1,5 @@
+#to run
+
+export exchangename="booking_topic"
+export exchangetype="topic"
+
