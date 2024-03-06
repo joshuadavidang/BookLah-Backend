@@ -84,12 +84,13 @@ def processBookConcert(booking):
         }
 
     else:
+        
         print('\n\n-----Publishing the (booking info) message with routing_key=booking.info-----')        
 
         channel.basic_publish(exchange=exchangename, routing_key="booking.info", 
             body=message)
     
-    print("\nOrder published to RabbitMQ Exchange.\n")
+    print("\nBooking published to RabbitMQ Exchange.\n")
 
 
     print('\n\n-----Invoking payment microservice-----')
@@ -136,13 +137,13 @@ def processBookConcert(booking):
         }
     
     print('\n\n-----Invoking tracking microservice-----')
-    tracking_result = invoke_http(tracking_URL, method="POST", json=booking_result['data'])
+    tracking_result = invoke_http(tracking_URL, method="PUT", json=booking_result['data'])
     print("tracking_result:", tracking_result, '\n')
 
     code = tracking_result["code"]
+    message = json.dumps(tracking_result)
     if code not in range(200, 300):
         print('\n\n-----Publishing the (tracking error) message with routing_key=tracking.error-----')
-        message = json.dumps(tracking_result)
         channel.basic_publish(exchange=exchangename, routing_key="tracking.error", 
             body=message, properties=pika.BasicProperties(delivery_mode = 2)) 
         
@@ -155,6 +156,14 @@ def processBookConcert(booking):
                      "tracking_result": tracking_result},
             "message": "Simulated tracking error sent for error handling."
         }
+
+    else:     
+        print('\n\n-----Publishing the (tracking info) message with routing_key=tracking.info-----')        
+
+        channel.basic_publish(exchange=exchangename, routing_key="tracking.info", 
+            body=message)
+    
+    print("\nTracking published to RabbitMQ Exchange.\n")
 
     return { "code": 201,
         "data": {
