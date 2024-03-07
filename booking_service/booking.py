@@ -8,16 +8,17 @@ db = SQLAlchemy(app)
 
 class Booking(db.Model):
     __tablename__ = 'booking'
-    booking_id = db.Column(db.Integer, primary_key=True)
+    booking_id = db.Column(db.String(50), primary_key=True)
     user_id = db.Column(db.Integer, nullable=False)
     concert_id = db.Column(db.Integer, nullable=False)
     performer = db.Column(db.String(100), nullable=False)
     title = db.Column(db.String(100), nullable=False)
     date = db.Column(db.Date, nullable=False)
     time = db.Column(db.Time, nullable=False)
-    price = db.Column(db.Float(precision=2), nullable=False)
-    cat_number = db.Column(db.Integer)
-    seat_number = db.Column(db.String(10), nullable=False)
+    price = db.Column(db.Integer, nullable=False)
+    cat_number = db.Column(db.String, nullable=False)
+    seat_numbers = db.Column(db.String(255), nullable=False)  # Change to String type for storing array of seat numbers
+    quantity = db.Column(db.Integer, nullable=False)
     availability = db.Column(db.Integer)
 
     def json(self):
@@ -31,7 +32,8 @@ class Booking(db.Model):
             "time": str(self.time),
             "price": self.price,
             "cat_number": self.cat_number,
-            "seat_number": self.seat_number,
+            "seat_numbers": self.seat_numbers.split(','),
+            "quantity":self.quantity,
             "availability": self.availability
         }
 
@@ -42,12 +44,13 @@ def get_all_bookings():
         return jsonify({"code": 200, "data": {"bookings": [booking.json() for booking in booking_list]}})
     return jsonify({"code": 404, "message": "There are no bookings."}), 404
 
-@app.route("/booking/<int:booking_id>", methods=['GET'])
+@app.route("/booking/<string:booking_id>", methods=['GET'])
 def find_booking_by_id(booking_id):
     booking = Booking.query.get(booking_id)
     if booking:
         return jsonify({"code": 200, "data": booking.json()})
-    return jsonify({"code": 404, "message": "Booking not found."}), 404
+    return jsonify({"code": 404, "data": {"booking_id": booking_id},
+    "message": "Booking not found."}), 404
 
 @app.route("/booking", methods=['POST'])
 def create_booking():
