@@ -4,7 +4,6 @@ from flask_cors import CORS
 import os, sys
 from os import environ
 
-import requests
 from invokes import invoke_http
 
 import pika
@@ -14,13 +13,11 @@ import amqp_connection
 app = Flask(__name__)
 CORS(app)
 
-event_URL = "http://localhost:5000/getConcerts"
 booking_URL = "http://localhost:5001/create_booking" 
-payment_URL = "http://localhost:5002/process_payment"
+event_URL = "http://localhost:5002/isConcertSoldOut/"
 notification_URL = "http://localhost:5003/notification"
-tracking_URL = "http://localhost:5004/tracking"
-activity_log_URL = "http://localhost:5005/activity_log"
-error_URL = "http://localhost:5006/error"
+activity_log_URL = "http://localhost:5004/activity_log"
+error_URL = "http://localhost:5005/error"
 
 exchangename = environ.get('exchangename')
 exchangetype = environ.get('exchangetype')
@@ -73,7 +70,6 @@ def processBookConcert(booking):
         print('\n\n-----Publishing the (booking error) message with routing_key=booking.error-----')
         channel.basic_publish(exchange=exchangename, routing_key="booking.error", 
             body=message, properties=pika.BasicProperties(delivery_mode = 2)) 
-        # make message persistent within the matching queues until it is received by some receiver 
 
         print("Booking status ({:d}) published to the RabbitMQ Exchange:".format(code), booking_result)
 
@@ -92,31 +88,32 @@ def processBookConcert(booking):
     
     print("\nBooking published to RabbitMQ Exchange.\n")
 
+    concert_id = booking_result["data"]["concert_id"]
 
-    print('\n\n-----Invoking payment microservice-----')
-    payment_result = invoke_http(payment_URL, method="POST", json=booking["data"])
-    print("payment_result:", payment_result, '\n')
+    print('\n\n-----Invoking event microservice-----')
+    event_result = invoke_http(event_URL + concert_id, method="GET")
+    print("event_result:", event_result, '\n')
 
-    code = payment_result["code"]
+    code = event_result["code"]
     if code not in range(200, 300):
-        print('\n\n-----Publishing the (payment error) message with routing_key=payment.error-----')
-        message = json.dumps(payment_result)
-        channel.basic_publish(exchange=exchangename, routing_key="payment.error", 
+        print('\n\n-----Publishing the (event error) message with routing_key=event.error-----')
+        message = json.dumps(event_result)
+        channel.basic_publish(exchange=exchangename, routing_key="event.error", 
             body=message, properties=pika.BasicProperties(delivery_mode = 2)) 
         
-        print("Booking status ({:d}) published to the RabbitMQ Exchange:".format(code), payment_result)
+        print("Booking status ({:d}) published to the RabbitMQ Exchange:".format(code), event_result)
 
         return {
             "code": 500,
             "data": {
-                     "payment_result": payment_result},
-            "message": "Simulated payment error sent for error handling."
+                     "event_result": event_result},
+            "message": "Simulated event error sent for error handling."
         }
     
     
     print('\n\n-----Invoking notification microservice-----')
-    #send email from payment and booking details from booking
-    notification_result = invoke_http(notification_URL, method="POST", json=jsonify({"email": payment_result["email"], "booking_details": booking_result["data"]}))
+    #send email from frontend and booking details from booking
+    notification_result = invoke_http(notification_URL, method="POST", json=jsonify({"email": booking["data"]["email"], "booking_details": booking_result["data"]}))
     print("notification_result:", notification_result, '\n')
 
     code = notification_result["code"]
@@ -133,44 +130,14 @@ def processBookConcert(booking):
             "code": 500,
             "data": {"booking_result": booking_result,
                      "notification_result": notification_result},
-            "message": "Simulated shipping record error sent for error handling."
+            "message": "Simulated notification record error sent for error handling."
         }
     
-    print('\n\n-----Invoking tracking microservice-----')
-    tracking_result = invoke_http(tracking_URL, method="PUT", json=booking_result['data'])
-    print("tracking_result:", tracking_result, '\n')
-
-    code = tracking_result["code"]
-    message = json.dumps(tracking_result)
-    if code not in range(200, 300):
-        print('\n\n-----Publishing the (tracking error) message with routing_key=tracking.error-----')
-        channel.basic_publish(exchange=exchangename, routing_key="tracking.error", 
-            body=message, properties=pika.BasicProperties(delivery_mode = 2)) 
-        
-        print("Booking status ({:d}) published to the RabbitMQ Exchange:".format(code), tracking_result)
-
-        # 7. Return error
-        return {
-            "code": 500,
-            "data": {"booking_result": booking_result,
-                     "tracking_result": tracking_result},
-            "message": "Simulated tracking error sent for error handling."
-        }
-
-    else:     
-        print('\n\n-----Publishing the (tracking info) message with routing_key=tracking.info-----')        
-
-        channel.basic_publish(exchange=exchangename, routing_key="tracking.info", 
-            body=message)
-    
-    print("\nTracking published to RabbitMQ Exchange.\n")
-
     return { "code": 201,
         "data": {
             "booking_result": booking_result,
-            "payment_result": payment_result,
+            "event_result": event_result,
             "notification_result": notification_result,
-            "tracking_result": tracking_result,
         }
 }
 
