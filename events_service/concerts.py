@@ -10,8 +10,8 @@ class Events(db.Model):
     performer = db.Column(db.String(50), nullable=False)
     title = db.Column(db.String(150), nullable=False)
     venue = db.Column(db.String(150), nullable=False)
-    date = db.Column(db.Date, nullable=False)
-    time = db.Column(db.Time, nullable=False)
+    date = db.Column(db.String, nullable=False)
+    time = db.Column(db.String, nullable=False)
     capacity = db.Column(db.Integer, nullable=False)
     description = db.Column(db.String(1000), nullable=False)
     sold_out = db.Column(db.Boolean, nullable=False, default=False)
@@ -47,7 +47,7 @@ class Events(db.Model):
             "title": self.title,
             "venue": self.venue,
             "date": self.date,
-            "time": self.time.strftime("%H:%M:%S"),
+            "time": self.time,
             "capacity": self.capacity,
             "description": self.description,
             "created_by": self.created_by,
@@ -80,6 +80,20 @@ def getConcert(concertid):
     return jsonify({"code": 200, "data": concert.json()})
 
 
+@app.route("/isConcertSoldOut/<string:concertid>")
+def isConcertSoldOut(concertid):
+    concert = db.session.query(Events).filter_by(concertid=concertid).first()
+    if not concert:
+        return jsonify({"code": 404, "message": "concert not found."}), 404
+
+    return jsonify(
+        {
+            "code": 200,
+            "data": {"concertid": concert.concertid, "sold_out": concert.sold_out},
+        }
+    )
+
+
 @app.route("/getAdminCreatedConcert/<string:userId>")
 def getAdminCreatedConcert(userId):
     """
@@ -110,6 +124,8 @@ def addConcert(concertid):
         )
 
     data = request.get_json()
+
+    print(data)
     concert = Events(concertid, **data)
 
     try:
