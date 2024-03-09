@@ -2,9 +2,17 @@ from flask import request, jsonify
 from dbConfig import app, db, PORT
 from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime
+import stripe
+
+# /api/v1/getConcerts
+# /api/v1/getConcert
+# /api/v1/isConcertSoldOut/<string:concertid>
+# /api/v1/getAdminCreatedConcert
+# /api/v1/addConcert/<string:concertid>
+# /api/v1/deleteConcert/<string:concertid>
 
 
-class Events(db.Model):
+class Concert(db.Model):
     __tablename__ = "concert"
     concertid = db.Column(UUID(as_uuid=True), primary_key=True)
     performer = db.Column(db.String(50), nullable=False)
@@ -15,6 +23,7 @@ class Events(db.Model):
     capacity = db.Column(db.Integer, nullable=False)
     description = db.Column(db.String(1000), nullable=False)
     sold_out = db.Column(db.Boolean, nullable=False, default=False)
+    price = db.Column(db.INTEGER, nullable=False, default=0)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     created_by = db.Column(db.String(50), nullable=False)
 
@@ -27,6 +36,7 @@ class Events(db.Model):
         date,
         time,
         capacity,
+        price,
         description,
         created_by,
     ):
@@ -37,6 +47,7 @@ class Events(db.Model):
         self.date = date
         self.time = time
         self.capacity = capacity
+        self.price = price
         self.description = description
         self.created_by = created_by
 
@@ -54,9 +65,9 @@ class Events(db.Model):
         }
 
 
-@app.route("/getConcerts")
+@app.route("/api/v1/getConcerts")
 def getConcerts():
-    concerts = db.session.scalars(db.select(Events)).all()
+    concerts = db.session.scalars(db.select(Concert)).all()
     if len(concerts):
         return jsonify(
             {
@@ -67,11 +78,11 @@ def getConcerts():
     return jsonify({"code": 404, "message": "There are no concerts."}), 404
 
 
-@app.route("/getConcert/<string:concertid>")
+@app.route("/api/v1/getConcert/<string:concertid>")
 def getConcert(concertid):
 
     concert = db.session.scalars(
-        db.select(Events).filter_by(concertid=concertid).limit(1)
+        db.select(Concert).filter_by(concertid=concertid).limit(1)
     ).first()
 
     if not concert:
@@ -80,9 +91,9 @@ def getConcert(concertid):
     return jsonify({"code": 200, "data": concert.json()})
 
 
-@app.route("/isConcertSoldOut/<string:concertid>")
+@app.route("/api/v1/isConcertSoldOut/<string:concertid>")
 def isConcertSoldOut(concertid):
-    concert = db.session.query(Events).filter_by(concertid=concertid).first()
+    concert = db.session.query(Concert).filter_by(concertid=concertid).first()
     if not concert:
         return jsonify({"code": 404, "message": "concert not found."}), 404
 
@@ -94,23 +105,24 @@ def isConcertSoldOut(concertid):
     )
 
 
-@app.route("/getAdminCreatedConcert/<string:userId>")
+################### ADMIN ENDPOINTS ######################
+@app.route("/api/v1/getAdminCreatedConcert/<string:userId>")
 def getAdminCreatedConcert(userId):
     """
     To be called by admin only to retrieve the list of created concerts
     """
 
-    concerts = db.session.scalars(db.select(Events).filter_by(created_by=userId)).all()
+    concerts = db.session.scalars(db.select(Concert).filter_by(created_by=userId)).all()
     if not concerts:
         return jsonify({"code": 404, "message": "concert not found."}), 404
 
     return jsonify({"code": 200, "data": [concert.json() for concert in concerts]})
 
 
-@app.route("/addConcert/<string:concertid>", methods=["POST"])
+@app.route("/api/v1/addConcert/<string:concertid>", methods=["POST"])
 def addConcert(concertid):
     if db.session.scalars(
-        db.select(Events).filter_by(concertid=concertid).limit(1)
+        db.select(Concert).filter_by(concertid=concertid).limit(1)
     ).first():
         return (
             jsonify(
@@ -124,9 +136,7 @@ def addConcert(concertid):
         )
 
     data = request.get_json()
-
-    print(data)
-    concert = Events(concertid, **data)
+    concert = Concert(concertid, **data)
 
     try:
         db.session.add(concert)
@@ -146,9 +156,9 @@ def addConcert(concertid):
     return jsonify({"code": 201, "data": concert.json()}), 201
 
 
-@app.route("/deleteConcert/<string:concertid>", methods=["DELETE"])
+@app.route("/api/v1/deleteConcert/<string:concertid>", methods=["DELETE"])
 def deleteConcert(concertid):
-    concert = db.session.query(Events).filter_by(concertid=concertid).first()
+    concert = db.session.query(Concert).filter_by(concertid=concertid).first()
     if not concert:
         return jsonify(
             {
@@ -182,6 +192,32 @@ def deleteConcert(concertid):
             ),
             500,
         )
+
+
+class Product(db.Model):
+    __tablename__ = "product"
+    concertid = db.Column(UUID(as_uuid=True), primary_key=True)
+    price = db.Column(db.INTEGER, nullable=False)
+
+    def __init__(self, concertid, price):
+        self.concertid = concertid
+        self.price = price
+
+    def json(self):
+        return {"concertid": self.concertid, "price": self.price}
+
+
+@app.route("/api/v1/addProductToStripe", methods=["POST"])
+def addProductToStripe():
+    data = request.get_json()
+    name = data["name"]
+    price = data["price"]
+
+    product = stripe.Price.create(
+        currency="sgd", unit_amount=(price * 100), product_data={"name": name}
+    )
+
+    return jsonify({"code": 201, "data": product}), 201
 
 
 if __name__ == "__main__":
