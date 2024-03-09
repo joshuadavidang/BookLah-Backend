@@ -25,7 +25,7 @@ app.config["STRIPE_SECRET_KEY"] = os.getenv("STRIPE_SECRET_KEY")
 
 stripe.api_key = app.config["STRIPE_SECRET_KEY"]
 
-YOUR_DOMAIN = "http://localhost:5002"
+FRONT_END_DOMAIN = "http://localhost:3000"
 
 
 class StripeIds(db.Model):
@@ -72,105 +72,46 @@ def find_stripe_ids(concert_id, category):
     )
 
 
-@app.route("/create_products/<string:id>", methods=["POST"])
-def create_products(id):
-    # concert_id = request.json.get('concert_id', None)
-    # category = request.json.get('category', None)
-    # concert_name = request.json.get('concert_name', None)
-    data = request.get_json()
-    print(data)
-    # price = request.json.get('price', None)
-
-    if db.session.scalars(
-        db.select(StripeIds).filter_by(concert_id=id).limit(1)
-    ).first():
-        return (
-            jsonify(
-                {
-                    "code": 400,
-                    "data": {
-                        "concert_id": id,
-                    },
-                    "message": "Stripe Id already exists.",
-                }
-            ),
-            400,
-        )
-
-    # price_obj = stripe.Price.create(
-    #             currency="sgd",
-    #             unit_amount=(price * 100),
-    #             product_data={"name": concert_name},
-    #             )
-
-    # stripeids = StripeIds(concert_id=concert_id,
-    #                       category=category,
-    #                       concert_name=concert_name,
-    #                       price_obj = str(price_obj),
-    #                       price_id=price_obj["id"],
-    #                       product_id=price_obj["product"])
-
-    stripeids = StripeIds(id, **data)
-
-    try:
-        db.session.add(stripeids)
-        db.session.commit()
-    except:
-        return (
-            jsonify(
-                {
-                    "code": 500,
-                    "data": {"stripeids": stripeids},
-                    "message": "An error occurred creating the book.",
-                }
-            ),
-            500,
-        )
-
-    return jsonify({"code": 201, "data": stripeids.json()}), 201
+@app.route("/api/v1/getCustomerEmail", methods=["POST"])
+def getCustomerInfo():
+    session_id = request.get_json().get("sessionId")
+    checkout_session = stripe.checkout.Session.retrieve(session_id)
+    email = checkout_session.customer_details.email
+    return jsonify({"code": 200, "email": email})
 
 
-@app.route("/process_payment", methods=["POST"])
+@app.route("/api/v1/processPayment", methods=["POST"])
 def create_session():
 
-    concert_id = request.json.get("concert_id", None)
-    category = request.json.get("category", None)
-    quantity = request.json.get("quantity", None)
+    # concert_id = request.json.get("concert_id", None)
+    # category = request.json.get("category", None)
+    # quantity = request.json.get("quantity", None)
 
-    if not find_stripe_ids(concert_id, category):
-        result = create_products()["data"]
-    else:
-        result = find_stripe_ids(concert_id, category)["data"]
+    # if not find_stripe_ids(concert_id, category):
+    #     result = create_products()["data"]
+    # else:
+    #     result = find_stripe_ids(concert_id, category)["data"]
 
-    price = result["price_id"]
+    # price = result["price_id"]
 
     try:
         checkout_session = stripe.checkout.Session.create(
             line_items=[
                 {
-                    # Provide the exact Price ID (for example, pr_1234) of the product you want to sell
-                    "price": price,
-                    "quantity": quantity,
+                    "price": "price_1OsSEpFBfCxiguYffsBlmZ5m",
+                    "quantity": 1,
                 },
             ],
             mode="payment",
             invoice_creation={"enabled": True},
-            success_url=YOUR_DOMAIN + "/success.html?session_id={CHECKOUT_SESSION_ID}",
-            cancel_url=YOUR_DOMAIN + "/cancel.html",
+            success_url=FRONT_END_DOMAIN + "/success?session_id={CHECKOUT_SESSION_ID}",
+            cancel_url=FRONT_END_DOMAIN + "/error",
         )
 
     except Exception as e:
         return str(e)
 
-    return redirect(checkout_session.url, code=303)
-    # return jsonify({"checkout_url": checkout_session.url})
-
-
-@app.route("/session-status", methods=["GET"])
-def session_status():
-    session = stripe.checkout.Session.retrieve(request.args.get("session_id"))
-
-    return jsonify(status=session.status, customer_email=session.customer_details.email)
+    return jsonify({"checkout_url": checkout_session.url})
 
 
 if __name__ == "__main__":
