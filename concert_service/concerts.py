@@ -5,6 +5,8 @@ from sqlalchemy import Enum
 from datetime import datetime
 import stripe
 
+######## 8 ENDPOINTS ########
+
 # /api/v1/getConcerts
 # /api/v1/getConcert/<string:concert_id>
 # /api/v1/isConcertSoldOut/<string:concert_id>
@@ -12,6 +14,7 @@ import stripe
 # /api/v1/getAdminCreatedConcert/<string:userId>
 # /api/v1/addConcert/<string:concert_id>
 # /api/v1/updateConcertAvailability/<string:concert_id>
+# /api/v1/updateConcertDetails/<string:concert_id>
 
 
 class Concert(db.Model):
@@ -258,6 +261,50 @@ def updateConcertAvailability(concert_id):
                     "code": 500,
                     "data": {"concert_id": concert_id},
                     "message": "An error occurred while updating the concert status",
+                }
+            ),
+            500,
+        )
+
+
+@app.route("/api/v1/updateConcertDetails/<string:concert_id>", methods=["PUT"])
+def updateConcertDetails(concert_id):
+    """
+    For admins to update concert details
+    """
+
+    concert = db.session.query(Concert).filter_by(concert_id=concert_id).first()
+    if not concert:
+        return jsonify(
+            {
+                "code": 404,
+                "data": {"concert_id": concert_id},
+                "message": "Concert not found.",
+            }
+        )
+
+    updatedData = request.get_json()
+
+    try:
+        db.session.query(Concert).filter_by(concert_id=concert_id).update(updatedData)
+        db.session.commit()
+        return (
+            jsonify(
+                {
+                    "code": 204,
+                    "data": {"concert_id": concert_id},
+                    "message": "Updated concert details successfully.",
+                }
+            ),
+            200,
+        )
+    except:
+        return (
+            jsonify(
+                {
+                    "code": 500,
+                    "data": {"concert_id": concert_id},
+                    "message": "An error occurred while updating the concert details",
                 }
             ),
             500,
