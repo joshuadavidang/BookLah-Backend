@@ -13,10 +13,8 @@ forum_URL = "http://localhost:5003/forum"
 @app.route("/get_forum", methods=['GET'])
 def get_forum():
     try:
-        # Make a GET request to the forum microservice to fetch all forums
         response = requests.get(f"{forum_URL}/getPosts")
 
-        # Check if the request was successful (status code 200)
         if response.status_code == 200:
             forums = response.json()["data"]["posts"]
             return jsonify(forums), 200
