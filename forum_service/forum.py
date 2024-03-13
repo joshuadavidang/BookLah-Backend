@@ -212,6 +212,7 @@ def addComment(post_id):
 
     try:
         db.session.add(comment)
+        post.replies += 1
         db.session.commit()
         return jsonify({"code": 201, "data": comment.json()}), 201
     except Exception as e:
@@ -258,6 +259,8 @@ def deleteComment(comment_id):
         return jsonify({"code": 404, "message": "Comment not found."}), 404
 
     try:
+        post = Posts.query.get(comment.post_id)
+        post.replies -= 1
         db.session.delete(comment)
         db.session.commit()
         return jsonify({"code": 200, "message": "Comment deleted successfully."}), 200
