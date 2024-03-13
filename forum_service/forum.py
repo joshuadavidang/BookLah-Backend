@@ -4,6 +4,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
+from flask_cors import CORS
 
 
 class Posts(db.Model):
