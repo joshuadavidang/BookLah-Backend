@@ -17,6 +17,8 @@ class Posts(db.Model):
     views = db.Column(db.Integer, nullable=False, default=0)
     replies = db.Column(db.Integer, nullable=False, default=0)
 
+    comments = relationship("Comments", backref="post_comments")
+
     def __init__(
         self,
         post_id,
@@ -201,16 +203,13 @@ def addComment(post_id):
     if not post:
         return jsonify({"code": 404, "message": "Post not found."}), 404
 
-    # Extract comment data from request JSON
     data = request.get_json()
     comment_id = data.get('comment_id')
     content = data.get('content')
 
-    # Create a new comment object
     comment = Comments(post_id=post_id, comment_id=comment_id, content=content)
 
     try:
-        # Add the comment to the database session
         db.session.add(comment)
         db.session.commit()
         return jsonify({"code": 201, "data": comment.json()}), 201
@@ -221,11 +220,9 @@ def addComment(post_id):
 
 @app.route("/getComments/<string:post_id>")
 def getComments(post_id):
-    # Query the database to retrieve comments for the specified post ID
     comments = Comments.query.filter_by(post_id=post_id).all()
 
     if comments:
-        # Serialize the comments data into JSON format
         comments_data = [comment.json() for comment in comments]
         return jsonify({"code": 200, "data": comments_data}), 200
     else:
@@ -234,21 +231,17 @@ def getComments(post_id):
 
 @app.route("/updateComment/<string:comment_id>", methods=["PUT"])
 def updateComment(comment_id):
-    # Retrieve the comment object from the database based on the provided comment ID
     comment = Comments.query.get(comment_id)
 
     if not comment:
         return jsonify({"code": 404, "message": "Comment not found."}), 404
 
-    # Extract the updated comment data from the request JSON
     data = request.get_json()
     content = data.get('content')
 
-    # Update the attributes of the comment object with the new data
     comment.content = content
 
     try:
-        # Commit the changes to the database session
         db.session.commit()
         return jsonify({"code": 200, "data": comment.json()}), 200
     except Exception as e:
@@ -258,14 +251,12 @@ def updateComment(comment_id):
 
 @app.route("/deleteComment/<string:comment_id>", methods=["DELETE"])
 def deleteComment(comment_id):
-    # Retrieve the comment object from the database based on the provided comment ID
     comment = Comments.query.get(comment_id)
 
     if not comment:
         return jsonify({"code": 404, "message": "Comment not found."}), 404
 
     try:
-        # Delete the comment from the database session
         db.session.delete(comment)
         db.session.commit()
         return jsonify({"code": 200, "message": "Comment deleted successfully."}), 200
