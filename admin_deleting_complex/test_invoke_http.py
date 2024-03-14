@@ -18,7 +18,7 @@ booking_details = {
     "seat_numbers": ["Z1", "Z2", "Z3"],
     "quantity": 3 }
 create_results = invoke_http(
-        "http://localhost:5001/booking/" + booking_id, method='POST', 
+        "http://localhost:5001/booking/", method='POST', 
         json=booking_details
     )
 
