@@ -11,30 +11,20 @@ class Booking(db.Model):
     booking_id = db.Column(db.String(50), primary_key=True)
     user_id = db.Column(db.Integer, nullable=False)
     concert_id = db.Column(db.Integer, nullable=False)
-    performer = db.Column(db.String(100), nullable=False)
-    title = db.Column(db.String(100), nullable=False)
-    date = db.Column(db.Date, nullable=False)
-    time = db.Column(db.Time, nullable=False)
     price = db.Column(db.Integer, nullable=False)
     cat_number = db.Column(db.String, nullable=False)
     seat_numbers = db.Column(db.String(255), nullable=False)  # Change to String type for storing array of seat numbers
     quantity = db.Column(db.Integer, nullable=False)
-    availability = db.Column(db.Integer)
 
     def json(self):
         return {
             "booking_id": self.booking_id,
             "user_id": self.user_id,
             "concert_id": self.concert_id,
-            "performer": self.performer,
-            "title": self.title,
-            "date": str(self.date),
-            "time": str(self.time),
             "price": self.price,
             "cat_number": self.cat_number,
             "seat_numbers": self.seat_numbers.split(','),
             "quantity":self.quantity,
-            "availability": self.availability
         }
 
 @app.route("/booking", methods=['GET'])
@@ -64,4 +54,4 @@ def create_booking():
         return jsonify({"code": 500, "message": f"An error occurred while creating the booking: {str(e)}"}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5001, debug=True)

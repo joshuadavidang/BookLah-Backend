@@ -1,8 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-
 import os, sys
-
 import requests
 from invokes import invoke_http
 
@@ -12,28 +10,30 @@ CORS(app)
 events_URL = "http://localhost:5000/events"
 booking_URL = "http://localhost:5001/booking"
 notification_URL = "http://localhost:5002/notification"
-refund_URL = "http://localhost:5003/refund"
+payment_URL = "http://localhost:5003/payment"
 error_URL = "http://localhost:5004/error"
-
 
 @app.route("/cancel_concert", methods=['POST'])
 def cancel_concert():
     if request.is_json:
         try:
             booking = request.get_json()
-            print("\nReceived a request to cancel concert:", booking)
-
-            # Retrieve list of users who have booked the concert from the booking microservice
-            booking_response = requests.get(booking_URL + f"?concert_id={booking['concert_id']}")
+            # Retrieve list of users who have booked the specified concert from the booking microservice
+            concert_id = booking.get("concert_id")
+            booking_response = requests.get(f"{booking_URL}?concert_id={concert_id}")
             if booking_response.status_code == 200:
                 booked_users = booking_response.json().get("data", {}).get("bookings", [])
-                print("Booked users:", booked_users)
+                print("Booked users for concert_id =", concert_id)
+                # Filter booked_users based on concert_id
+                booked_users_for_concert = [booking for booking in booked_users if booking.get("concert_id") == concert_id]
+                # Print only the booking information for users who booked tickets for the specified concert
+                for user_booking in booked_users_for_concert:
+                    print(user_booking)
             else:
                 return jsonify({"code": booking_response.status_code, "message": f"Failed to retrieve booked users from booking microservice: {booking_response.text}"}), booking_response.status_code
 
-
             # Process canceling concert
-            result = process_cancel_concert(booking)
+            result = process_cancel_concert(booked_users_for_concert, concert_id)  # Pass booked_users_for_concert and concert_id
             return jsonify(result), result["code"]
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -43,7 +43,7 @@ def cancel_concert():
             return jsonify({"code": 500, "message": "admin.py internal error: " + ex_str}), 500
     return jsonify({"code": 400, "message": "Invalid JSON input: " + str(request.get_data())}), 400
 
-def process_cancel_concert(booking):
+def process_cancel_concert(booked_users_for_concert, concert_id):
     try:
         # Perform necessary actions for canceling concert
         # Example:
@@ -53,20 +53,20 @@ def process_cancel_concert(booking):
 
         # Example of notifying ticket holders
         print('\n-----Notifying ticket holders-----')
-        notification_result = invoke_http(notification_URL, method='POST', json=booking)
+        notification_result = invoke_http(notification_URL, method='POST', json=booked_users_for_concert)
         print('notification_result:', notification_result)
 
         # Example of triggering refunds
         print('\n-----Triggering refunds-----')
-        refund_result = invoke_http(refund_URL, method='POST', json=booking)
-        print('refund_result:', refund_result)
+        payment_result = invoke_http(payment_URL, method='POST', json=booked_users_for_concert)
+        print('refund_result:', payment_result)
 
         # Example of canceling event
         print('\n-----Canceling event-----')
-        cancel_event_result = invoke_http(events_URL, method='POST', json=booking)
+        cancel_event_result = invoke_http(events_URL, method='POST', json=booked_users_for_concert)
         print('cancel_event_result:', cancel_event_result)
 
-        return {"code": 200, "data": {"notification_result": notification_result, "refund_result": refund_result, "cancel_event_result": cancel_event_result}}
+        return {"code": 200, "data": {"notification_result": notification_result, "payment_result": payment_result, "cancel_event_result": cancel_event_result}}
     except Exception as e:
         return {"code": 500, "message": f"An error occurred while processing cancelation: {str(e)}"}
 
