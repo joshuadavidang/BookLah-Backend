@@ -217,7 +217,16 @@ def addConcert(concert_id):
             500,
         )
 
-    return jsonify({"code": 201, "data": concert.json()}), 201
+    return (
+        jsonify(
+            {
+                "code": 201,
+                "data": concert.json(),
+                "message": "A new concert has been added",
+            }
+        ),
+        201,
+    )
 
 
 @app.route("/api/v1/updateConcertAvailability/<string:concert_id>", methods=["PUT"])
