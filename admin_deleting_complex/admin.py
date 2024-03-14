@@ -7,13 +7,13 @@ from invokes import invoke_http
 app = Flask(__name__)
 CORS(app)
 
-events_URL = "http://localhost:5000/events"
-booking_URL = "http://localhost:5001/booking"
-notification_URL = "http://localhost:5002/notification"
-payment_URL = "http://localhost:5003/payment"
-error_URL = "http://localhost:5004/error"
+events_URL = "http://localhost:5000/api/v1/events"
+booking_URL = "http://localhost:5001/api/v1/booking"
+notification_URL = "http://localhost:5002/api/v1/notification"
+payment_URL = "http://localhost:5003/api/v1/payment"
+error_URL = "http://localhost:5004/api/v1/error"
 
-@app.route("/cancel_concert", methods=['POST'])
+@app.route("/api/v1/cancel_concert", methods=['POST'])
 def cancel_concert():
     if request.is_json:
         try:

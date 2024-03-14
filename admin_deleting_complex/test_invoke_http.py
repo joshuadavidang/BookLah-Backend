@@ -3,7 +3,7 @@ from invokes import invoke_http
 import json
 
 # invoke book microservice to get all books
-results = invoke_http("http://localhost:5001/booking", method='GET')
+results = invoke_http("http://localhost:5001/api/v1/booking", method='GET')
 
 print( type(results) )
 print()
@@ -25,7 +25,7 @@ booking_details = {
 }
 
 create_results = invoke_http(
-        "http://localhost:5001/booking", method='POST', 
+        "http://localhost:5001/api/v1/booking", method='POST', 
         json=booking_details
     )
 

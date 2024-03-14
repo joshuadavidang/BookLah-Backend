@@ -27,14 +27,14 @@ class Booking(db.Model):
             "quantity":self.quantity,
         }
 
-@app.route("/booking", methods=['GET'])
+@app.route("/api/v1/booking", methods=['GET'])
 def get_all_bookings():
     booking_list = Booking.query.all()
     if len(booking_list) > 0:
         return jsonify({"code": 200, "data": {"bookings": [booking.json() for booking in booking_list]}})
     return jsonify({"code": 404, "message": "There are no bookings."}), 404
 
-@app.route("/booking/<string:booking_id>", methods=['GET'])
+@app.route("/api/v1/booking/<string:booking_id>", methods=['GET'])
 def find_booking_by_id(booking_id):
     booking = Booking.query.get(booking_id)
     if booking:
@@ -42,7 +42,7 @@ def find_booking_by_id(booking_id):
     return jsonify({"code": 404, "data": {"booking_id": booking_id},
     "message": "Booking not found."}), 404
 
-@app.route("/booking", methods=['POST'])
+@app.route("/api/v1/booking", methods=['POST'])
 def create_booking():
     data = request.json
     booking = Booking(**data)
