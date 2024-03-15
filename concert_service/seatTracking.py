@@ -12,7 +12,6 @@ db = SQLAlchemy(app)
 
 class Concert(db.Model):
     __tablename__ = "tracking"
-
     concertID = db.Column(db.Integer, primary_key=True)
     category = db.Column(db.Integer, primary_key=True)
     capacity = db.Column(db.Integer, nullable=False)
@@ -33,7 +32,7 @@ class Concert(db.Model):
         }
 
 
-@app.route("/tracking")
+@app.route("/api/v1/tracking")
 def get_all():
     tracking_list = db.session.execute("SELECT * FROM tracking").fetchall()
 
@@ -47,7 +46,7 @@ def get_all():
     return jsonify({"code": 404, "message": "There are no concert records."}), 404
 
 
-@app.route("/tracking/<string:concertID>")
+@app.route("/api/v1/tracking/<string:concertID>")
 def find_by_concertID(concertID, category):
     concert = db.session.execute(
         "SELECT * FROM tracking WHERE concertID = :concertID AND category = :category LIMIT 1",

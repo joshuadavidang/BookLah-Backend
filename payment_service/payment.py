@@ -19,12 +19,9 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_recycle": 299}
 db = SQLAlchemy(app)
 
 CORS(app)
-
 app.config["STRIPE_PUBLIC_KEY"] = os.getenv("STRIPE_PUBLIC_KEY")
 app.config["STRIPE_SECRET_KEY"] = os.getenv("STRIPE_SECRET_KEY")
-
 stripe.api_key = app.config["STRIPE_SECRET_KEY"]
-
 FRONT_END_DOMAIN = "http://localhost:3000"
 
 
