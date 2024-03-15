@@ -14,19 +14,17 @@ import amqp_connection
 app = Flask(__name__)
 CORS(app)
 
-booking_URL = "http://localhost:5001/create_booking"
-event_URL = "http://localhost:5002/isConcertSoldOut/"
-notification_URL = "http://localhost:5003/notification"
-activity_log_URL = "http://localhost:5004/activity_log"
-error_URL = "http://localhost:5005/error"
+booking_URL = "http://localhost:5001/api/v1/create_booking"
+event_URL = "http://localhost:5002/api/v1/isConcertSoldOut/"
+notification_URL = "http://localhost:5020/api/v1/send-email"
+activity_log_URL = "http://localhost:5004/api/v1/activity_log"
+error_URL = "http://localhost:5005/api/v1/error"
 
 exchangename = environ.get("exchangename")
 exchangetype = environ.get("exchangetype")
-
 connection = amqp_connection.create_connection()
 channel = connection.channel()
 
-# if the exchange is not yet created, exit the program
 if not amqp_connection.check_exchange(channel, exchangename, exchangetype):
     print(
         "\nCreate the 'Exchange' before running this microservice. \nExiting the program."
@@ -34,7 +32,7 @@ if not amqp_connection.check_exchange(channel, exchangename, exchangetype):
     sys.exit(0)
 
 
-@app.route("/book_concert", methods=["POST"])
+@app.route("/api/v1/book_concert", methods=["POST"])
 def book_concert():
     if request.is_json:
         try:
@@ -156,8 +154,8 @@ def processBookConcert(booking):
         method="POST",
         json=jsonify(
             {
-                "email": booking["data"]["email"],
-                "booking_details": booking_result["data"],
+                "recipient_email": booking["data"]["email"],
+                "message": booking_result["data"],
             }
         ),
     )
@@ -211,7 +209,6 @@ def processBookConcert(booking):
     }
 
 
-# Execute this program if it is run as a main script (not by 'import')
 if __name__ == "__main__":
     print("This is flask " + os.path.basename(__file__) + " for placing an order...")
     app.run(host="0.0.0.0", port=5100, debug=True)
