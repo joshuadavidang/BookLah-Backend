@@ -4,6 +4,10 @@ import os, sys
 import requests
 from invokes import invoke_http
 
+import pika
+import json
+import amqp_connection
+
 app = Flask(__name__)
 CORS(app)
 
@@ -12,6 +16,17 @@ booking_URL = "http://localhost:5001/api/v1/booking"
 notification_URL = "http://localhost:5002/api/v1/notification"
 payment_URL = "http://localhost:5003/api/v1/payment"
 error_URL = "http://localhost:5004/api/v1/error"
+
+exchangename = "order_topic" # exchange name
+exchangetype="topic" # use a 'topic' exchange to enable interaction
+
+connection = amqp_connection.create_connection() 
+channel = connection.channel()
+
+#if the exchange is not yet created, exit the program
+if not amqp_connection.check_exchange(channel, exchangename, exchangetype):
+    print("\nCreate the 'Exchange' before running this microservice. \nExiting the program.")
+    sys.exit(0)  # Exit with a success status
 
 @app.route("/api/v1/cancel_concert", methods=['POST'])
 def cancel_concert():
@@ -40,7 +55,9 @@ def cancel_concert():
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             ex_str = str(e) + " at " + str(exc_type) + ": " + fname + ": line " + str(exc_tb.tb_lineno)
             print(ex_str)
+            
             return jsonify({"code": 500, "message": "admin.py internal error: " + ex_str}), 500
+        
     return jsonify({"code": 400, "message": "Invalid JSON input: " + str(request.get_data())}), 400
 
 def process_cancel_concert(booked_users_for_concert, concert_id):
@@ -56,6 +73,43 @@ def process_cancel_concert(booked_users_for_concert, concert_id):
         notification_result = invoke_http(notification_URL, method='POST', json=booked_users_for_concert)
         print('notification_result:', notification_result)
 
+        code = notification_result["code"]
+        message = json.dumps(notification_result)
+
+    
+        if code not in range(200, 300):
+            # Inform the error microservice
+            #print('\n\n-----Invoking error microservice as order fails-----')
+            print('\n\n-----Publishing the (order error) message with routing_key=order.error-----')
+
+            # invoke_http(error_URL, method="POST", json=order_result)
+            channel.basic_publish(exchange=exchangename, routing_key="order.error", 
+                body=message, properties=pika.BasicProperties(delivery_mode = 2)) 
+            # make message persistent within the matching queues until it is received by some receiver 
+            # (the matching queues have to exist and be durable and bound to the exchange)
+
+            # - reply from the invocation is not used;
+            # continue even if this invocation fails        
+            print("\nOrder status ({:d}) published to the RabbitMQ Exchange:".format(
+                code), notification_result)
+
+            # 7. Return error
+            return {
+                "code": 500,
+                "data": {"notification_result": notification_result},
+                "message": "Notification creation failure sent for error handling."
+            }
+        else:
+            # 4. Record new order
+            # record the activity log anyway
+            #print('\n\n-----Invoking activity_log microservice-----')
+            print('\n\n-----Publishing the (order info) message with routing_key=order.info-----')        
+
+            # invoke_http(activity_log_URL, method="POST", json=order_result)            
+            channel.basic_publish(exchange=exchangename, routing_key="order.info", 
+                body=message)
+
+
         # Example of triggering refunds
         print('\n-----Triggering refunds-----')
         payment_result = invoke_http(payment_URL, method='POST', json=booked_users_for_concert)
@@ -67,6 +121,7 @@ def process_cancel_concert(booked_users_for_concert, concert_id):
         print('cancel_event_result:', cancel_event_result)
 
         return {"code": 200, "data": {"notification_result": notification_result, "payment_result": payment_result, "cancel_event_result": cancel_event_result}}
+    
     except Exception as e:
         return {"code": 500, "message": f"An error occurred while processing cancelation: {str(e)}"}
 
