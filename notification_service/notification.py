@@ -1,19 +1,18 @@
 from flask import Flask, request, jsonify
 from flask_sslify import SSLify
 import requests
-import os
 from flask_cors import CORS
 from os import environ
 
 app = Flask(__name__)
 CORS(app)
-sslify = SSLify(app)  # Force HTTPS for all routes
+sslify = SSLify(app)
 
 MAILGUN_API_KEY = environ.get("MAILGUN_API_KEY")
 MAILGUN_DOMAIN = environ.get("MAILGUN_DOMAIN")
 
 
-@app.route("/send-email", methods=["POST"])
+@app.route("/api/v1/send-email", methods=["POST"])
 def send_email():
     if request.method == "POST":
         data = request.get_json()
@@ -35,7 +34,6 @@ def send_email():
                     "text": "message",
                 },
             )
-            print("!!!", response.json())
             return jsonify({"message": "Email sent successfully"}), 200
 
         except Exception as e:
