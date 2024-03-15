@@ -8,8 +8,8 @@ app = Flask(__name__)
 CORS(app)
 sslify = SSLify(app)
 
-MAILGUN_API_KEY = environ.get("MAILGUN_API_KEY")
-MAILGUN_DOMAIN = environ.get("MAILGUN_DOMAIN")
+MAILERSEND_API_KEY = environ.get("MAILERSEND_API_KEY")
+MAILERSEND_DOMAIN_ID = environ.get("MAILERSEND_DOMAIN_ID")
 
 
 @app.route("/api/v1/send-email", methods=["POST"])
@@ -25,15 +25,17 @@ def send_email():
 
         try:
             response = requests.post(
-                f"https://api.mailgun.net/v3/{MAILGUN_DOMAIN}/messages",
-                auth=("api", MAILGUN_API_KEY),
-                data={
-                    "from": "joshuadavidang@outlook.sg",
-                    "to": "joshuadavidang@outlook.sg",
-                    "subject": "subject",
-                    "text": "message",
-                },
+                f"https://api.mailersend.com/v1/email",
+                headers={'Content-Type': 'application/json', 'Authorization': f'Bearer {MAILERSEND_API_KEY}'},
+                json={
+                    'from': {'email': 'your_email@example.com'},
+                    'to': [{'email': recipient_email}],
+                    'subject': subject,
+                    'text': message
+                }
             )
+            response.raise_for_status()
+            
             return jsonify({"message": "Email sent successfully"}), 200
 
         except Exception as e:
