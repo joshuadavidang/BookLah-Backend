@@ -117,27 +117,34 @@ def processBookConcert(booking):
     print("notification_result:", notification_result, '\n')
 
     code = notification_result["code"]
+    message = json.dumps(notification_result)
+
     if code not in range(200, 300):
         print('\n\n-----Publishing the (notification error) message with routing_key=notification.error-----')
-        message = json.dumps(notification_result)
         channel.basic_publish(exchange=exchangename, routing_key="notification.error", 
             body=message, properties=pika.BasicProperties(delivery_mode = 2)) 
-        
-        print("Booking status ({:d}) published to the RabbitMQ Exchange:".format(code), notification_result)
 
-        # 7. Return error
+        print("Notification status ({:d}) published to the RabbitMQ Exchange:".format(code), notification_result)
+
         return {
             "code": 500,
-            "data": {"booking_result": booking_result,
-                     "notification_result": notification_result},
-            "message": "Simulated notification record error sent for error handling."
+            "data": {"notification_result": notification_result},
+            "message": "Notification failure sent for error handling."
         }
+
+    else:
+        
+        print('\n\n-----Publishing the (notification info) message with routing_key=notification.info-----')        
+
+        channel.basic_publish(exchange=exchangename, routing_key="notification.info", body=message)
+    
+    print("\Notification published to RabbitMQ Exchange.\n")
+
     
     return { "code": 201,
         "data": {
             "booking_result": booking_result,
             "event_result": event_result,
-            "notification_result": notification_result,
         }
 }
 
