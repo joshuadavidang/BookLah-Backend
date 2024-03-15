@@ -29,7 +29,7 @@ def json(self):
 
 
 
-@app.route("/tracking")
+@app.route("/seats")
 def get_all():
     seats_list = db.session.execute("SELECT * FROM seats").fetchall()
 
@@ -51,7 +51,7 @@ def get_all():
 
 
 
-@app.route("/tracking/<string:concertID>")
+@app.route("/seats/<string:concertID>")
 def find_by_seat(concertID, category, seat_number):
     seat = db.session.execute(
         "SELECT * FROM seats WHERE concertID = :concertID AND category = :category AND seat_number = :seat_number LIMIT 1",
@@ -74,7 +74,7 @@ def find_by_seat(concertID, category, seat_number):
 
 
 
-@app.route("/tracking/<string:concertID>", methods=['POST'])
+@app.route("/seats/<string:concertID>", methods=['POST'])
 def create_tracking(concertID, category, seat_number):
 
     existing_record = db.session.execute(
