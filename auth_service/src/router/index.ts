@@ -1,8 +1,9 @@
 import {
+  authenticateUser,
   getAuthUrl,
   getUserData,
-  authenticateUser,
 } from "@/controllers/authController";
+import { saveUserInformation } from "@/controllers/userDataController";
 import Router from "@koa/router";
 import dotenv from "dotenv";
 dotenv.config();
@@ -18,5 +19,6 @@ router.get(`${API_VERSION}/`, async (ctx: any) => {
 router.get("/getAuthUrl", getAuthUrl);
 router.get("/authenticateUser", authenticateUser);
 router.get("/userData", getUserData);
+router.post("/saveUserInformation", saveUserInformation);
 
 export default router;
