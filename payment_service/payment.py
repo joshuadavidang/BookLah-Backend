@@ -15,6 +15,7 @@ app.config["SQLALCHEMY_DATABASE_URI"] = (
 )
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_recycle": 299}
+PORT = 5006
 
 db = SQLAlchemy(app)
 
@@ -111,4 +112,4 @@ def create_session():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5002, debug=True)
+    app.run(host="0.0.0.0", port=PORT, debug=True)

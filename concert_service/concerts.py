@@ -233,7 +233,7 @@ def addConcert(concert_id):
 def updateConcertAvailability(concert_id):
     """
     For admins to update concert availability
-    AVAILABLE | UNAVAILABLE
+    AVAILABLE | CANCELLED
     """
 
     concert = db.session.query(Concert).filter_by(concert_id=concert_id).first()

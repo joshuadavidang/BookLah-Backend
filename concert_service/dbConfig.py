@@ -8,7 +8,7 @@ import stripe
 load_dotenv()
 
 app = Flask(__name__)
-PORT = 5001
+PORT = 5002
 CORS(app, supports_credentials=True)
 
 db_username = os.getenv("DB_USERNAME")
