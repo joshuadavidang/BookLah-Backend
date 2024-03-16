@@ -33,10 +33,10 @@ def send_email():
             client = mt.MailtrapClient(token=API_KEY)
             client.send(mail)
 
-            return jsonify({"message": "Email sent successfully"}), 200
+            return jsonify({"code": 200, "message": "Email sent successfully"}), 200
 
         except Exception as e:
-            return jsonify({"error": str(e)}), 500
+            return jsonify({"code": 500, "message": str(e)}), 500
 
 
 if __name__ == "__main__":

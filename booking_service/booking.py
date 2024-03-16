@@ -20,6 +20,7 @@ class Booking(db.Model):
         db.String(255), nullable=False
     )  # Change to String type for storing array of seat numbers
     quantity = db.Column(db.Integer, nullable=False)
+    email = db.Column(db.String(50), nullable=False)
 
     def json(self):
         return {
@@ -30,6 +31,7 @@ class Booking(db.Model):
             "cat_number": self.cat_number,
             "seat_numbers": self.seat_numbers.split(","),
             "quantity": self.quantity,
+            "email": self.email,
         }
 
 
