@@ -8,12 +8,12 @@ db = SQLAlchemy(app)
 
 class Booking(db.Model):
     __tablename__ = 'booking'
-    booking_id = db.Column(db.String(50), primary_key=True)
-    user_id = db.Column(db.Integer, nullable=False)
-    concert_id = db.Column(db.Integer, nullable=False)
+    booking_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.String, nullable=False)
+    concert_id = db.Column(db.String, nullable=False)
     price = db.Column(db.Integer, nullable=False)
     cat_number = db.Column(db.String, nullable=False)
-    seat_numbers = db.Column(db.String(255), nullable=False)  # Change to String type for storing array of seat numbers
+    seat_numbers = db.Column(db.String(255), nullable=False)
     quantity = db.Column(db.Integer, nullable=False)
 
     def json(self):

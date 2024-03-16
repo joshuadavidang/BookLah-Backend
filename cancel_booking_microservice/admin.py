@@ -68,6 +68,16 @@ def process_cancel_concert(booked_users_for_concert, concert_id):
         # 2. Trigger refunds
         # 3. Cancel event in the event microservice
 
+        # Example of canceling event
+        print('\n-----Canceling event-----')
+        cancel_event_result = invoke_http(events_URL, method='POST', json=booked_users_for_concert)
+        print('cancel_event_result:', cancel_event_result)
+
+         # Example of triggering refunds
+        print('\n-----Triggering refunds-----')
+        payment_result = invoke_http(payment_URL, method='POST', json=booked_users_for_concert)
+        print('refund_result:', payment_result)
+
         # Example of notifying ticket holders
         print('\n-----Notifying ticket holders-----')
         notification_result = invoke_http(notification_URL, method='POST', json=booked_users_for_concert)
@@ -103,22 +113,13 @@ def process_cancel_concert(booked_users_for_concert, concert_id):
             # 4. Record new order
             # record the activity log anyway
             #print('\n\n-----Invoking activity_log microservice-----')
-            print('\n\n-----Publishing the (order info) message with routing_key=order.info-----')        
+            print('\n\n-----Publishing the (notification info) message with routing_key= notification.info-----')        
 
             # invoke_http(activity_log_URL, method="POST", json=order_result)            
-            channel.basic_publish(exchange=exchangename, routing_key="order.info", 
+            channel.basic_publish(exchange=exchangename, routing_key="notification.info", 
                 body=message)
 
 
-        # Example of triggering refunds
-        print('\n-----Triggering refunds-----')
-        payment_result = invoke_http(payment_URL, method='POST', json=booked_users_for_concert)
-        print('refund_result:', payment_result)
-
-        # Example of canceling event
-        print('\n-----Canceling event-----')
-        cancel_event_result = invoke_http(events_URL, method='POST', json=booked_users_for_concert)
-        print('cancel_event_result:', cancel_event_result)
 
         return {"code": 200, "data": {"notification_result": notification_result, "payment_result": payment_result, "cancel_event_result": cancel_event_result}}
     
