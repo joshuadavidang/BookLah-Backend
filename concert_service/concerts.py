@@ -34,7 +34,7 @@ class Concert(db.Model):
         nullable=False,
         default="AVAILABLE",
     )
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now())
     created_by = db.Column(db.String(50), nullable=False)
 
     def __init__(
@@ -320,6 +320,7 @@ def updateConcertDetails(concert_id):
         )
 
 
+### TO REMOVE
 class Product(db.Model):
     __tablename__ = "product"
     concert_id = db.Column(UUID(as_uuid=True), primary_key=True)

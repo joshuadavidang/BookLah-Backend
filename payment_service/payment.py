@@ -79,7 +79,6 @@ def getCustomerInfo():
 
 @app.route("/api/v1/processPayment", methods=["POST"])
 def create_session():
-
     # concert_id = request.json.get("concert_id", None)
     # category = request.json.get("category", None)
     # quantity = request.json.get("quantity", None)
