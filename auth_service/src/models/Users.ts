@@ -12,9 +12,6 @@ export default class Users {
   @Column()
   name: string;
 
-  @Column()
-  gender: string;
-
   @Column({
     type: "enum",
     enum: UserType,
