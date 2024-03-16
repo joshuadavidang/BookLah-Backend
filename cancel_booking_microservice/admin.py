@@ -11,11 +11,13 @@ import amqp_connection
 app = Flask(__name__)
 CORS(app)
 
-events_URL = "http://localhost:5000/api/v1/events"
-booking_URL = "http://localhost:5001/api/v1/booking"
-notification_URL = "http://localhost:5002/api/v1/notification"
-payment_URL = "http://localhost:5003/api/v1/payment"
-error_URL = "http://localhost:5004/api/v1/error"
+booking_URL = "http://localhost:5001/api/v1/create_booking"
+concert_URL = "http://localhost:5002/api/v1/isConcertSoldOut/"
+notification_URL = "http://localhost:5003/api/v1/send_email"
+activity_log_URL = "http://localhost:5004/api/v1/activity_log"
+error_URL = "http://localhost:5005/api/v1/error"
+payment_URL= "http://localhost:5006/api/v1/refund_payment"
+
 
 exchangename = "order_topic" # exchange name
 exchangetype="topic" # use a 'topic' exchange to enable interaction
@@ -69,9 +71,9 @@ def process_cancel_concert(booked_users_for_concert, concert_id):
         # 3. Cancel event in the event microservice
 
         # Example of canceling event
-        print('\n-----Canceling event-----')
-        cancel_event_result = invoke_http(events_URL, method='POST', json=booked_users_for_concert)
-        print('cancel_event_result:', cancel_event_result)
+        print('\n-----Canceling concert-----')
+        cancel_concert_result = invoke_http(concert_URL, method='POST', json=booked_users_for_concert)
+        print('cancel_concert_result:', cancel_concert_result)
 
          # Example of triggering refunds
         print('\n-----Triggering refunds-----')
