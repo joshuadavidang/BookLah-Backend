@@ -59,43 +59,27 @@ def find_by_concertID(concertID, category):
 @app.route("/tracking/<string:concertID>/<string:category>", methods=["POST"])
 def create_tracking(concertID, category):
 
-    existing_record = db.session.execute(
-        "SELECT * FROM tracking WHERE concertID = :concertID AND category = :category LIMIT 1",
-        {"concertID": concertID, "category": category},
-    ).fetchone()
-
-    if existing_record:
-        return (
-            jsonify(
-                {
-                    "code": 400,
-                    "data": {"concertID": concertID},
-                    "message": "Concert tracking record already exists.",
-                }
-            ),
-            400,
-        )
-
-    data = request.get_json()
-    concert_data = {"concertID": concertID, "category": data.get("category")}
-    concert = concert(**concert_data, **data)
+    concertID = request.json.get('concertID', None)
+    category = request.json.get('category', None)
+    tracking = ConcertTracking(concertID = concertID, category= category, takenSeats = 0)
 
     try:
-        db.session.add(concert)
+        db.session.add(tracking)
         db.session.commit()
-    except:
-        return (
-            jsonify(
-                {
-                    "code": 500,
-                    "data": {"concertID": concertID, "category": category},
-                    "message": "An error occurred creating the concert.",
-                }
-            ),
-            500,
-        )
+    except Exception as e:
+        return jsonify(
+            {
+                "code": 500,
+                "message": "An error occurred while creating the tracking record. " + str(e)
+            }
+        ), 500
 
-    return jsonify({"code": 201, "data": concert.json()}), 201
+    return jsonify(
+        {
+            "code": 201,
+            "data": tracking.json()
+        }
+    ), 201
 
 @app.route("/tracking/<string:concertID>/<string:category>", methods=['PUT'])
 def update_availseats(concertID, category):
