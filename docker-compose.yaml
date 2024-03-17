@@ -1,9 +1,9 @@
 version: "3.8"
 
 services:
-  ##############################
+  ##########################
   ### Postgres Database ###
-  ##############################
+  #########################
   db:
     image: postgres:latest
     restart: always
@@ -71,9 +71,23 @@ services:
     depends_on:
       - auth_service
 
-  ############################
-  # Simple Payment Service ###
-  ############################
+  ###################################
+  ### Simple Notification Service ###
+  ###################################
+  notification_service:
+    build: ./notification_service
+    container_name: notification_service
+    restart: always
+    ports:
+      - 5003:5003
+    environment:
+      - MAILTRAP_API_KEY=${MAILTRAP_API_KEY}
+    depends_on:
+      - auth_service
+
+  ##############################
+  ### Simple Payment Service ###
+  ##############################
   payment_service:
     build: ./payment_service
     container_name: payment_service
@@ -86,3 +100,20 @@ services:
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
     depends_on:
       - auth_service
+
+  ####################################
+  ### Book Concert Complex Service ###
+  ####################################
+  book_concert_microservice:
+    build: ./book_concert_microservice
+    container_name: book_concert_microservice
+    restart: always
+    ports:
+      - 5100:5100
+    environment:
+      - EXCHANGE_NAME=${EXCHANGE_NAME}
+      - EXCHANGE_TYPE=${EXCHANGE_TYPE}
+    depends_on:
+      - auth_service
+      - booking_service
+      - notification_service
