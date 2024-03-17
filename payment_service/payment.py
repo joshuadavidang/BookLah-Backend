@@ -24,34 +24,30 @@ CORS(app)
 
 class StripeIds(db.Model):
     __tablename__ = "payment"
-
     concert_id = db.Column(UUID(as_uuid=True), primary_key=True)
     category = db.Column(db.String(100), primary_key=True)
     concert_name = db.Column(db.String(100), nullable=False)
-    price_obj = db.Column(db.String(100), nullable=False)
     price_id = db.Column(db.String(100), nullable=False)
     product_id = db.Column(db.String(100), nullable=False)
-
-    __table_args__ = (db.PrimaryKeyConstraint("concert_id", "category"),)
 
     def json(self):
         return {
             "concert_id": self.concert_id,
             "category": self.category,
             "concert_name": self.concert_name,
-            "price_obj": self.price_obj,
             "price_id": self.price_id,
             "product_id": self.product_id,
         }
 
 
-@app.route("/payment/<string:concert_id>/<string:category>")
-def find_stripe_ids(concert_id, category):
-    stripe_ids = (
-        db.session.query(StripeIds)
+@app.route("/payment/get_stripeids/<uuid:concert_id>/<string:category>")
+def get_stripeids(concert_id, category):
+    stripe_ids = db.session.scalars(
+        db.select(StripeIds)
         .filter_by(concert_id=concert_id, category=category)
-        .first()
-    )
+        .limit(1)
+    ).first()
+
     if stripe_ids:
         return jsonify({"code": 200, "data": stripe_ids.json()})
     return (
@@ -76,23 +72,17 @@ def getCustomerInfo():
 
 @app.route("/api/v1/processPayment", methods=["POST"])
 def create_session():
-    # concert_id = request.json.get("concert_id", None)
-    # category = request.json.get("category", None)
-    # quantity = request.json.get("quantity", None)
-
-    # if not find_stripe_ids(concert_id, category):
-    #     result = create_products()["data"]
-    # else:
-    #     result = find_stripe_ids(concert_id, category)["data"]
-
-    # price = result["price_id"]
+    concert_id = request.json.get("concert_id", None)
+    category = request.json.get("category", None)
+    quantity = request.json.get("quantity", None)
+    stripeids = get_stripeids(concert_id, category)["data"]
 
     try:
         checkout_session = stripe.checkout.Session.create(
             line_items=[
                 {
-                    "price": "price_1OsSEpFBfCxiguYffsBlmZ5m",
-                    "quantity": 1,
+                    "price": stripeids["price_id"],
+                    "quantity": quantity,
                 },
             ],
             mode="payment",
@@ -105,6 +95,85 @@ def create_session():
         return str(e)
 
     return jsonify({"checkout_url": checkout_session.url})
+
+
+## ADMIN
+# create stripe ids from Stripe
+def create_stripeids(product_name, price):
+
+    price = stripe.Price.create(
+        currency="sgd",
+        unit_amount=price * 100,  # in cents
+        product_data={"name": product_name},
+    )
+
+    return {
+        "code": 201,
+        "data": {"price_id": price["id"], "product_id": price["product"]},
+        "message": "Stripe IDs created successfully",
+    }
+
+
+# add Stripe IDs to database
+@app.route(
+    "/api/v1/add_stripeids/<uuid:concert_id>/<string:category>", methods=["POST"]
+)
+def add_stripeids(concert_id, category):
+    if db.session.scalars(
+        db.select(StripeIds)
+        .filter_by(concert_id=concert_id, category=category)
+        .limit(1)
+    ).first():
+        return (
+            jsonify(
+                {
+                    "code": 400,
+                    "data": {"concert_id": concert_id, "category": category},
+                    "message": "Stripe IDs already exist.",
+                }
+            ),
+            400,
+        )
+
+    data = request.get_json()
+    concert_name = data["name"]
+    price = data["price"]
+
+    stripeids = create_stripeids(concert_name, price)
+
+    stripeids_db = StripeIds(
+        concert_id=concert_id,
+        category=category,
+        concert_name=concert_name,
+        price_id=stripeids["data"]["price_id"],
+        product_id=stripeids["data"]["product_id"],
+    )
+
+    try:
+        db.session.add(stripeids_db)
+        db.session.commit()
+    except:
+        return (
+            jsonify(
+                {
+                    "code": 500,
+                    "data": {"concert_id": concert_id, "category": category},
+                    "message": "An error occurred adding the Stripe IDs.",
+                }
+            ),
+            500,
+        )
+
+    return (
+        jsonify(
+            {
+                "code": 201,
+                "data": stripeids_db.json(),
+                "message": "Stripe IDs have been added successfully",
+            }
+        ),
+        201,
+    )
 
 
 if __name__ == "__main__":
