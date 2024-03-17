@@ -15,8 +15,8 @@ app = Flask(__name__)
 CORS(app)
 
 booking_URL = "http://localhost:5001/api/v1/create_booking"
-event_URL = "http://localhost:5002/api/v1/isConcertSoldOut/"
-notification_URL = "http://localhost:5020/api/v1/send-email"
+concert_URL = "http://localhost:5002/api/v1/isConcertSoldOut/"
+notification_URL = "http://localhost:5003/api/v1/send_email"
 activity_log_URL = "http://localhost:5004/api/v1/activity_log"
 error_URL = "http://localhost:5005/api/v1/error"
 
@@ -36,11 +36,13 @@ if not amqp_connection.check_exchange(channel, exchangename, exchangetype):
 def book_concert():
     if request.is_json:
         try:
-            # booking (from frontend)
+            # booking details (from frontend)
             booking = request.get_json()
-            print("\nReceived an order in JSON:", booking)
-
+            print(booking)
+            print("\nReceived a booking order in JSON:", booking)
+            print(booking)
             result = processBookConcert(booking)
+
             return jsonify(result), result["code"]
 
         except Exception as e:
@@ -78,11 +80,11 @@ def book_concert():
 def processBookConcert(booking):
     print("\n-----Invoking booking microservice-----")
     # takes json from frontend and creates a booking
-    booking_result = invoke_http(booking_URL, method="POST", json=booking["data"])
-    print("booking result :", booking_result)
-
+    booking_result = invoke_http(booking_URL, method="POST", json=booking)
+    print(booking_result)
     code = booking_result["code"]
     message = json.dumps(booking_result)
+
     if code not in range(200, 300):
         print(
             "\n\n-----Publishing the (booking error) message with routing_key=booking.error-----"
@@ -106,11 +108,9 @@ def processBookConcert(booking):
         }
 
     else:
-
         print(
             "\n\n-----Publishing the (booking info) message with routing_key=booking.info-----"
         )
-
         channel.basic_publish(
             exchange=exchangename, routing_key="booking.info", body=message
         )
@@ -120,15 +120,15 @@ def processBookConcert(booking):
     concert_id = booking_result["data"]["concert_id"]
 
     print("\n\n-----Invoking event microservice-----")
-    event_result = invoke_http(event_URL + concert_id, method="GET")
-    print("event_result:", event_result, "\n")
+    concert_result = invoke_http(concert_URL + str(concert_id), method="GET")
+    print("concert_result:", concert_result, "\n")
 
-    code = event_result["code"]
+    code = concert_result["code"]
     if code not in range(200, 300):
         print(
             "\n\n-----Publishing the (event error) message with routing_key=event.error-----"
         )
-        message = json.dumps(event_result)
+        message = json.dumps(concert_result)
         channel.basic_publish(
             exchange=exchangename,
             routing_key="event.error",
@@ -138,27 +138,23 @@ def processBookConcert(booking):
 
         print(
             "Booking status ({:d}) published to the RabbitMQ Exchange:".format(code),
-            event_result,
+            concert_result,
         )
 
         return {
             "code": 500,
-            "data": {"event_result": event_result},
+            "data": {"concert_result": concert_result},
             "message": "Simulated event error sent for error handling.",
         }
 
     print("\n\n-----Invoking notification microservice-----")
     # send email from frontend and booking details from booking
-    notification_result = invoke_http(
-        notification_URL,
-        method="POST",
-        json=jsonify(
-            {
-                "recipient_email": booking["data"]["email"],
-                "message": booking_result["data"],
-            }
-        ),
-    )
+    email = booking["email"]
+    data = {
+        "recipient_email": email,
+        "message": "Thank you for booking with us!",
+    }
+    notification_result = invoke_http(notification_URL, method="POST", json=data)
     print("notification_result:", notification_result, "\n")
 
     code = notification_result["code"]
@@ -174,14 +170,12 @@ def processBookConcert(booking):
             body=message,
             properties=pika.BasicProperties(delivery_mode=2),
         )
-
         print(
             "Notification status ({:d}) published to the RabbitMQ Exchange:".format(
                 code
             ),
             notification_result,
         )
-
         return {
             "code": 500,
             "data": {"notification_result": notification_result},
@@ -189,22 +183,20 @@ def processBookConcert(booking):
         }
 
     else:
-
         print(
             "\n\n-----Publishing the (notification info) message with routing_key=notification.info-----"
         )
-
         channel.basic_publish(
             exchange=exchangename, routing_key="notification.info", body=message
         )
-
     print("\nNotification published to RabbitMQ Exchange.\n")
+
+    print("###### Booking Successful ######\n")
 
     return {
         "code": 201,
         "data": {
             "booking_result": booking_result,
-            "event_result": event_result,
         },
     }
 
