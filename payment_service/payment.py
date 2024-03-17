@@ -15,16 +15,14 @@ app.config["SQLALCHEMY_DATABASE_URI"] = (
 )
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_recycle": 299}
+PORT = 5006
 
 db = SQLAlchemy(app)
 
 CORS(app)
-
 app.config["STRIPE_PUBLIC_KEY"] = os.getenv("STRIPE_PUBLIC_KEY")
 app.config["STRIPE_SECRET_KEY"] = os.getenv("STRIPE_SECRET_KEY")
-
 stripe.api_key = app.config["STRIPE_SECRET_KEY"]
-
 FRONT_END_DOMAIN = "http://localhost:3000"
 
 
@@ -82,7 +80,6 @@ def getCustomerInfo():
 
 @app.route("/api/v1/processPayment", methods=["POST"])
 def create_session():
-
     # concert_id = request.json.get("concert_id", None)
     # category = request.json.get("category", None)
     # quantity = request.json.get("quantity", None)
@@ -115,4 +112,4 @@ def create_session():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5002, debug=True)
+    app.run(host="0.0.0.0", port=PORT, debug=True)
