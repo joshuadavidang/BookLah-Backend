@@ -10,7 +10,7 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 
 
-class Concert(db.Model):
+class ConcertTracking(db.Model):
     __tablename__ = "tracking"
     concertID = db.Column(db.Integer, primary_key=True)
     category = db.Column(db.Integer, primary_key=True)
@@ -99,6 +99,47 @@ def create_tracking(concertID, category):
 
     return jsonify({"code": 201, "data": concert.json()}), 201
 
+@app.route("/tracking/<string:concertID>/<string:category>", methods=['PUT'])
+def update_availseats(concertID, category):
+    try:
+        tracking = db.session.scalars(
+        db.select(ConcertTracking).filter_by(concertID=concertID, category= category).
+        limit(1)).first()
+        if not tracking:
+            return jsonify(
+                {
+                    "code": 404,
+                    "data": {
+                        "concertID": concertID, 
+                        "category": category
+                    },
+                    "message": "Concert not found."
+                }
+            ), 404
+
+        data = request.get_json()
+        if 'takenSeats' in data:
+            current_taken_seats = ConcertTracking.query.first().takenSeats
+            new_taken_seats = current_taken_seats + 1
+            ConcertTracking.takenSeats = new_taken_seats
+            db.session.commit()
+            return jsonify(
+                {
+                    "code": 200,
+                    "data": {"takenSeats": new_taken_seats}
+                }
+            ), 200
+    except Exception as e:
+        return jsonify(
+            {
+                "code": 500,
+                "data": {
+                    "concertID": concertID, 
+                    "category": category
+                },
+                "message": "An error occurred while updating the number of seats taken. " + str(e)
+            }
+        ), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
