@@ -34,7 +34,7 @@ class ConcertTracking(db.Model):
 
 @app.route("/api/v1/tracking")
 def get_all():
-    tracking_list = db.session.execute("SELECT * FROM tracking").fetchall()
+    tracking_list = db.session.scalars(db.select(ConcertTracking)).all()
 
     if len(tracking_list):
         return jsonify(
@@ -43,22 +43,20 @@ def get_all():
                 "data": {"tracking": [tracking.json() for tracking in tracking_list]},
             }
         )
-    return jsonify({"code": 404, "message": "There are no concert records."}), 404
+    return jsonify({"code": 404, "message": "There are no concert tracking records."}), 404
 
 
-@app.route("/api/v1/tracking/<string:concertID>")
+@app.route("/api/v1/tracking/<string:concertID>/<string:category>")
 def find_by_concertID(concertID, category):
-    concert = db.session.execute(
-        "SELECT * FROM tracking WHERE concertID = :concertID AND category = :category LIMIT 1",
-        {"concertID": concertID, "category": category},
-    ).fetchone()
+    concertTracking = db.session.scalars(
+        db.select(ConcertTracking).filter_by(concertID = concertID, category = category).limit(1)).first()
 
-    if concert:
-        return jsonify({"code": 200, "data": concert.json()})
-    return jsonify({"code": 404, "message": "Concert not found."}), 404
+    if concertTracking:
+        return jsonify({"code": 200, "data": concertTracking.json()})
+    return jsonify({"code": 404, "message": "Concert tracking not found."}), 404
 
 
-@app.route("/tracking/<string:concertID>", methods=["POST"])
+@app.route("/tracking/<string:concertID>/<string:category>", methods=["POST"])
 def create_tracking(concertID, category):
 
     existing_record = db.session.execute(
