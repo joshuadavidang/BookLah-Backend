@@ -40,7 +40,7 @@ def json(self):
 
 @app.route("/seats")
 def get_all():
-    seats_list = db.session.execute("SELECT * FROM seats").fetchall()
+    seats_list = db.session.scalars(db.select(Seats)).all()
 
     if len(seats_list):
         return jsonify(
@@ -49,25 +49,17 @@ def get_all():
     return jsonify({"code": 404, "message": "There are no seats."}), 404
 
 
-@app.route("/seats/<string:concertID>")
+@app.route("/seats/<string:concertID>/<string:category>/<string:seat_number>")
 def find_by_seat(concertID, category, seat_number):
-    seat = db.session.execute(
-        "SELECT * FROM seats WHERE concertID = :concertID AND category = :category AND seat_number = :seat_number LIMIT 1",
-        {"concertID": concertID, "category": category, "seat_number": seat_number},
-    ).fetchone()
-
+    seat = db.session.scalars(db.select(Seats).filter_by(concertID=concertID, category=category, seat_number=seat_number).limit(1)).first()
     if seat:
         return jsonify({"code": 200, "data": seat.json()})
     return jsonify({"code": 404, "message": "Seat not found."}), 404
 
 
-@app.route("/seats/<string:concertID>", methods=["POST"])
+@app.route("/seats/<string:concertID>/<string:category>/<string:seat_number>", methods=["POST"])
 def create_tracking(concertID, category, seat_number):
-
-    existing_record = db.session.execute(
-        "SELECT * FROM seats WHERE concertID = :concertID AND category = :category AND seat_number = :seat_number LIMIT 1",
-        {"concertID": concertID, "category": category, "seat_number": seat_number},
-    ).fetchone()
+    existing_record = db.session.scalars(db.select(Seats).filter_by(concertID=concertID, category=category, seat_number=seat_number).limit(1)).first()
 
     if existing_record:
         return (
@@ -85,12 +77,11 @@ def create_tracking(concertID, category, seat_number):
             400,
         )
 
-    data = request.get_json()
     seat_data = {
         "concertID": concertID,
-        "category": data.get("category"),
-        "seat_number": data.get("seat_number"),
-        "taken": data.get("taken"),
+        "category": category,
+        "seat_number": seat_number,
+        "taken": False,
     }
     seat = Seats(**seat_data)
 
