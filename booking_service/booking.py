@@ -1,12 +1,12 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 import uuid
+import os
 
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = (
-    "mysql+mysqlconnector://root:root@localhost:8889/booking_process"
-)
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URI")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+PORT = 5001
 db = SQLAlchemy(app)
 
 ######## 3 ENDPOINTS ########
@@ -95,4 +95,4 @@ def create_booking():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5001, debug=True)
+    app.run(host="0.0.0.0", port=PORT, debug=True)
