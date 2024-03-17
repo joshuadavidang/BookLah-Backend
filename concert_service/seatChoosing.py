@@ -106,6 +106,51 @@ def create_tracking(concertID, category, seat_number):
 
     return jsonify({"code": 201, "data": seat.json()}), 201
 
+@app.route("/seats/<string:concertID>/<string:category>/<string:seat_number>", methods=["POST"])
+def update_seat(concertID, category, seat_number):
+    try:
+        seats = db.session.scalars(db.select(Seats).filter_by(concertID=concertID, category=category, seat_number=seat_number).limit(1)).first()
+
+        if not seats:
+            return jsonify(
+                {
+                    "code": 404,
+                    "data": {
+                        "concertID": concertID, 
+                        "category": category, 
+                        "seat_number": seat_number
+                    },
+                    "message": "Seat not found."
+                }
+            ), 404
+
+        data = request.get_json()
+        if 'taken' in data and data['taken']:
+            seats.taken = True
+            db.session.commit()
+            return jsonify({
+                "code": 200,
+                "message": "Seat updated successfully.",
+                "data": seats.json()
+            }), 200
+        else:
+            return jsonify({
+                "code": 400,
+                "message": "Invalid or missing 'taken' field in request data."
+            }), 400
+    except Exception as e:
+        return jsonify(
+            {
+                "code": 500,
+                "data": {
+                    "concertID": concertID,
+                    "category": category,
+                    "seat_number": seat_number
+                },
+                "message": "An error occurred while updating the seat. " + str(e)
+            }
+        ), 500
+
 
 if __name__ == "__main__":
     app.run(port=5000, debug=True)
