@@ -9,20 +9,17 @@ import stripe
 load_dotenv()
 
 app = Flask(__name__)
-
-app.config["SQLALCHEMY_DATABASE_URI"] = (
-    "mysql+mysqlconnector://root:root@localhost:8889/esd_proj"
-)
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URI")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_recycle": 299}
-
-db = SQLAlchemy(app)
-
-CORS(app)
 app.config["STRIPE_PUBLIC_KEY"] = os.getenv("STRIPE_PUBLIC_KEY")
 app.config["STRIPE_SECRET_KEY"] = os.getenv("STRIPE_SECRET_KEY")
 stripe.api_key = app.config["STRIPE_SECRET_KEY"]
 FRONT_END_DOMAIN = "http://localhost:3000"
+
+PORT = 5006
+db = SQLAlchemy(app)
+CORS(app)
 
 
 class StripeIds(db.Model):
@@ -33,11 +30,6 @@ class StripeIds(db.Model):
     price_id = db.Column(db.String(100), nullable=False)
     product_id = db.Column(db.String(100), nullable=False)
 
-    # __table_args__ = (
-    #         {"extend_existing": True},  # Extend existing table args
-    #         {"primary_key": (concert_id, category)}  # Define composite primary key
-    #     )
-    
     def json(self):
         return {
             "concert_id": self.concert_id,
@@ -51,8 +43,9 @@ class StripeIds(db.Model):
 @app.route("/payment/get_stripeids/<uuid:concert_id>/<string:category>")
 def get_stripeids(concert_id, category):
     stripe_ids = db.session.scalars(
-            db.select(StripeIds).filter_by(concert_id=concert_id, category=category).
-            limit(1)
+        db.select(StripeIds)
+        .filter_by(concert_id=concert_id, category=category)
+        .limit(1)
     ).first()
 
     if stripe_ids:
@@ -68,6 +61,7 @@ def get_stripeids(concert_id, category):
         404,
     )
 
+
 @app.route("/api/v1/getCustomerEmail", methods=["POST"])
 def getCustomerInfo():
     session_id = request.get_json().get("sessionId")
@@ -75,13 +69,12 @@ def getCustomerInfo():
     email = checkout_session.customer_details.email
     return jsonify({"code": 200, "email": email})
 
+
 @app.route("/api/v1/processPayment", methods=["POST"])
 def create_session():
-
     concert_id = request.json.get("concert_id", None)
     category = request.json.get("category", None)
     quantity = request.json.get("quantity", None)
-
     stripeids = get_stripeids(concert_id, category)["data"]
 
     try:
@@ -105,57 +98,57 @@ def create_session():
 
 
 ## ADMIN
-#create stripe ids from Stripe
+# create stripe ids from Stripe
 def create_stripeids(product_name, price):
 
     price = stripe.Price.create(
         currency="sgd",
-        unit_amount=price * 100, #in cents
+        unit_amount=price * 100,  # in cents
         product_data={"name": product_name},
-        )
+    )
 
-    return  {
-                "code": 201,
-                "data": {"price_id": price["id"],
-                            "product_id": price["product"]},
-                "message": "Stripe IDs created successfully",
-            }
-   
-#add Stripe IDs to database
-@app.route("/api/v1/add_stripeids/<uuid:concert_id>/<string:category>", methods=["POST"])
+    return {
+        "code": 201,
+        "data": {"price_id": price["id"], "product_id": price["product"]},
+        "message": "Stripe IDs created successfully",
+    }
+
+
+# add Stripe IDs to database
+@app.route(
+    "/api/v1/add_stripeids/<uuid:concert_id>/<string:category>", methods=["POST"]
+)
 def add_stripeids(concert_id, category):
     if db.session.scalars(
-        db.select(StripeIds).filter_by(concert_id=concert_id, category=category).limit(1)
+        db.select(StripeIds)
+        .filter_by(concert_id=concert_id, category=category)
+        .limit(1)
     ).first():
         return (
             jsonify(
                 {
                     "code": 400,
-                    "data": {"concert_id": concert_id,
-                             "category": category},
+                    "data": {"concert_id": concert_id, "category": category},
                     "message": "Stripe IDs already exist.",
                 }
             ),
             400,
         )
 
-    # data = request.get_json()
-    # concert_name = data["name"]
-    # price = data["price"]
-
-    concert_name = "PLEASE"
-    price = 1000
+    data = request.get_json()
+    concert_name = data["name"]
+    price = data["price"]
 
     stripeids = create_stripeids(concert_name, price)
 
     stripeids_db = StripeIds(
-                                concert_id=concert_id,
-                                category=category,
-                                concert_name=concert_name,
-                                price_id=stripeids["data"]["price_id"],
-                                product_id=stripeids["data"]["product_id"]
-                            )
-    
+        concert_id=concert_id,
+        category=category,
+        concert_name=concert_name,
+        price_id=stripeids["data"]["price_id"],
+        product_id=stripeids["data"]["product_id"],
+    )
+
     try:
         db.session.add(stripeids_db)
         db.session.commit()
@@ -164,8 +157,7 @@ def add_stripeids(concert_id, category):
             jsonify(
                 {
                     "code": 500,
-                    "data": {"concert_id": concert_id,
-                             "category": category},
+                    "data": {"concert_id": concert_id, "category": category},
                     "message": "An error occurred adding the Stripe IDs.",
                 }
             ),
@@ -183,5 +175,6 @@ def add_stripeids(concert_id, category):
         201,
     )
 
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5006, debug=True)
+    app.run(host="0.0.0.0", port=PORT, debug=True)

@@ -1,12 +1,14 @@
 import time
 import pika
+from os import environ
 
 hostname = "localhost"
-port = 5672
+port = 5006
 exchangename = "booking_topic"
 exchangetype = "topic"
 
 
+# to create a connection to the broker
 def create_connection(max_retries=12, retry_interval=5):
     print("amqp_setup:create_connection")
 
@@ -46,23 +48,28 @@ def create_channel(connection):
     print("amqp_setup:create exchange")
     channel.exchange_declare(
         exchange=exchangename, exchange_type=exchangetype, durable=True
-    )
+    )  # 'durable' makes the exchange survive broker restarts
     return channel
 
 
+# function to create queues
 def create_queues(channel):
     print("amqp_setup:create queues")
     create_error_queue(channel)
     create_activity_log_queue(channel)
 
 
+# function to create Activity_Log queue
 def create_activity_log_queue(channel):
     print("amqp_setup:create_activity_log_queue")
     a_queue_name = "Activity_Log"
-    channel.queue_declare(queue=a_queue_name, durable=True)
+    channel.queue_declare(
+        queue=a_queue_name, durable=True
+    )  # 'durable' makes the queue survive broker restarts
     channel.queue_bind(exchange=exchangename, queue=a_queue_name, routing_key="#")
 
 
+# function to create Error queue
 def create_error_queue(channel):
     print("amqp_setup:create_error_queue")
     e_queue_name = "Error"

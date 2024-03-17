@@ -2,9 +2,10 @@ import time
 import pika
 
 hostname = "localhost"
-port = 5672
+port = 5006
 
 
+# function to create a connection to the broker
 def create_connection(max_retries=12, retry_interval=5):
     print("amqp_connection: Create_connection")
 
@@ -38,6 +39,7 @@ def create_connection(max_retries=12, retry_interval=5):
     return connection
 
 
+# function to check if the exchange exists
 def check_exchange(channel, exchangename, exchangetype):
     try:
         channel.exchange_declare(exchangename, exchangetype, durable=True, passive=True)

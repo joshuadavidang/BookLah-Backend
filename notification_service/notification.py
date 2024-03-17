@@ -5,13 +5,13 @@ import mailtrap as mt
 from os import environ
 
 app = Flask(__name__)
-PORT = 5020
+PORT = 5003
 CORS(app)
 sslify = SSLify(app)
 API_KEY = environ.get("API_KEY")
 
 
-@app.route("/api/v1/send-email", methods=["POST"])
+@app.route("/api/v1/send_email", methods=["POST"])
 def send_email():
     if request.method == "POST":
         data = request.get_json()
@@ -33,10 +33,10 @@ def send_email():
             client = mt.MailtrapClient(token=API_KEY)
             client.send(mail)
 
-            return jsonify({"message": "Email sent successfully"}), 200
+            return jsonify({"code": 200, "message": "Email sent successfully"}), 200
 
         except Exception as e:
-            return jsonify({"error": str(e)}), 500
+            return jsonify({"code": 500, "message": str(e)}), 500
 
 
 if __name__ == "__main__":
