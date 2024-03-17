@@ -9,21 +9,17 @@ import stripe
 load_dotenv()
 
 app = Flask(__name__)
-
-app.config["SQLALCHEMY_DATABASE_URI"] = (
-    "mysql+mysqlconnector://root:root@localhost:8889/esd_proj"
-)
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URI")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_recycle": 299}
-PORT = 5006
-
-db = SQLAlchemy(app)
-
-CORS(app)
 app.config["STRIPE_PUBLIC_KEY"] = os.getenv("STRIPE_PUBLIC_KEY")
 app.config["STRIPE_SECRET_KEY"] = os.getenv("STRIPE_SECRET_KEY")
 stripe.api_key = app.config["STRIPE_SECRET_KEY"]
 FRONT_END_DOMAIN = "http://localhost:3000"
+
+PORT = 5006
+db = SQLAlchemy(app)
+CORS(app)
 
 
 class StripeIds(db.Model):
