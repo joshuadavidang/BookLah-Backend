@@ -20,8 +20,8 @@ notification_URL = "http://localhost:5003/api/v1/send_email"
 activity_log_URL = "http://localhost:5004/api/v1/activity_log"
 error_URL = "http://localhost:5005/api/v1/error"
 
-exchangename = environ.get("exchangename")
-exchangetype = environ.get("exchangetype")
+exchangename = environ.get("EXCHANGENAME")
+exchangetype = environ.get("EXCHANGETYPE")
 connection = amqp_connection.create_connection()
 channel = connection.channel()
 
@@ -202,5 +202,4 @@ def processBookConcert(booking):
 
 
 if __name__ == "__main__":
-    print("This is flask " + os.path.basename(__file__) + " for placing an order...")
     app.run(host="0.0.0.0", port=5100, debug=True)
