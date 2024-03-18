@@ -126,7 +126,7 @@ services:
       - EXCHANGE_NAME=${EXCHANGE_NAME}
       - EXCHANGE_TYPE=${EXCHANGE_TYPE}
     depends_on:
-      - auth_service
       - rabbitmq
+      - auth_service
       - booking_service
       - notification_service
