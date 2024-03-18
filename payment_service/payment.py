@@ -112,17 +112,21 @@ def create_stripeids(product_name, price):
         currency="sgd",
         unit_amount=price * 100, #in cents
         product_data={"name": product_name},
-        )
+    )
 
-    return  {
-                "code": 201,
-                "data": {"price_id": price["id"],
-                            "product_id": price["product"]},
-                "message": "Stripe IDs created successfully",
-            }
-   
-#add Stripe IDs to database
-@app.route("/api/v1/add_stripeids/<uuid:concert_id>/<string:category>", methods=["POST"])
+    print(price)
+
+    return {
+        "code": 201,
+        "data": {"price_id": price["id"], "product_id": price["product"]},
+        "message": "Stripe IDs created successfully",
+    }
+
+
+# add Stripe IDs to database
+@app.route(
+    "/api/v1/add_stripeids/<string:concert_id>/<string:category>", methods=["POST"]
+)
 def add_stripeids(concert_id, category):
     if db.session.scalars(
         db.select(StripeIds).filter_by(concert_id=concert_id, category=category).limit(1)
