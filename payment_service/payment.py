@@ -1,4 +1,4 @@
-from flask import Flask, redirect, request, jsonify
+from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
@@ -9,7 +9,7 @@ import json
 
 load_dotenv()
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='', static_folder='frontend/', template_folder='frontend')
 
 app.config["SQLALCHEMY_DATABASE_URI"] = (
     "mysql+mysqlconnector://root:root@localhost:8889/esd_proj"
@@ -28,7 +28,7 @@ FRONT_END_DOMAIN = "http://localhost:3000"
 
 class StripeIds(db.Model):
     __tablename__ = "payment"
-    concert_id = db.Column(UUID(as_uuid=True), primary_key=True)
+    concert_id = db.Column(db.String(100), primary_key=True)
     category = db.Column(db.String(100), primary_key=True)
     concert_name = db.Column(db.String(100), nullable=False)
     price_id = db.Column(db.String(100), nullable=False)
@@ -55,10 +55,22 @@ class PaymentIntent(db.Model):
             "concert_id": self.concert_id,
         }
 
-##STRIPE IDS
+##FRONTEND
+@app.route("/")
+def get_root():
+    return render_template("index.html")
 
-@app.route("/payment/get_stripeids/<uuid:concert_id>/<string:category>")
+@app.route("/config")
+def get_config():
+    return jsonify({"publishable_key": os.getenv("STRIPE_PUBLIC_KEY")})
+
+##STRIPE IDS
+@app.route("/payment/get_stripeids/<string:concert_id>/<string:category>")
 def get_stripeids(concert_id, category):
+
+    # return (concert_id, type(concert_id))
+    # concert_id_uuid = UUID(str(concert_id))
+
     stripe_ids = db.session.scalars(
             db.select(StripeIds).filter_by(concert_id=concert_id, category=category).
             limit(1)
@@ -86,41 +98,58 @@ def getCustomerInfo():
     return jsonify({"code": 200, "email": email})
 
 ## COMPLEX 1
+# @app.route("/api/v1/processPayment", methods=["POST"])
+# def create_session():
+
+#     # concert_id = request.json.get("concert_id", None)
+#     # category = request.json.get("category", None)
+#     # price = request.json.get("price", None)
+
+#     price= 1000
+#     # stripeids = get_stripeids(concert_id, category)["data"]
+
+#     try:
+
+#         payment = stripe.PaymentIntent.create(
+#             amount=price * 100,
+#             currency="sgd",
+#             )
+
+#         return jsonify({"client_secret": payment.client_secret})
+#     except stripe.error.StripeError as e:
+#         return jsonify({"error": {"message": e.user_message}}), 400
+#     except Exception as e:
+#         return jsonify({"error": {"message": e.user_message}}), 500
+
+
 @app.route("/api/v1/processPayment", methods=["POST"])
 def create_session():
+    concert_id = "fcbeba79-7bfe-4648-83d8-552ba91c274f"
+    category = "1"
+    quantity = 2
 
-    # concert_id = request.json.get("concert_id", None)
-    # category = request.json.get("category", None)
-    # price = request.json.get("price", None)
-
-    price= 1000
     # stripeids = get_stripeids(concert_id, category)["data"]
+    stripeids = get_stripeids(concert_id, category).json
+    # print(stripeids["data"])
 
     try:
-        # checkout_session = stripe.checkout.Session.create(
-        #     line_items=[
-        #         {
-        #             "price": stripeids["price_id"],
-        #             "quantity": quantity,
-        #         },
-        #     ],
-        #     mode="payment",
-        #     invoice_creation={"enabled": True},
-        #     success_url=FRONT_END_DOMAIN + "/success?session_id={CHECKOUT_SESSION_ID}",
-        #     cancel_url=FRONT_END_DOMAIN + "/error",
-        # )
+        checkout_session = stripe.checkout.Session.create(
+            line_items=[
+                {
+                    "price": stripeids["data"]["price_id"],
+                    "quantity": quantity,
+                },
+            ],
+            mode="payment",
+            invoice_creation={"enabled": True},
+            success_url=FRONT_END_DOMAIN + "/success?session_id={CHECKOUT_SESSION_ID}",
+            cancel_url=FRONT_END_DOMAIN + "/error",
+        )
 
-        payment = stripe.PaymentIntent.create(
-            amount=price * 100,
-            currency="sgd",
-            )
-
-        return jsonify({"client_secret": payment.client_secret})
-    except stripe.error.StripeError as e:
-        return jsonify({"error": {"message": e.user_message}}), 400
     except Exception as e:
-        return jsonify({"error": {"message": e.user_message}}), 500
+        return str(e)
 
+    return jsonify({"checkout_url": checkout_session.url})
 
 ## WEBHOOK
 @app.route("/webhook", methods=["POST"])
