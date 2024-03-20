@@ -2,7 +2,7 @@ import time
 import pika
 from os import environ
 
-hostname = "localhost"
+hostname = "host.docker.internal"
 port = 5672
 exchangename = environ.get("EXCHANGE_NAME")
 exchangetype = environ.get("EXCHANGE_TYPE")
@@ -77,7 +77,17 @@ def create_error_queue(channel):
     channel.queue_bind(exchange=exchangename, queue=e_queue_name, routing_key="*.error")
 
 
-if __name__ == "__main__":
-    connection = create_connection()
-    channel = create_channel(connection)
-    create_queues(channel)
+# function to check if the exchange exists
+def check_exchange(channel, exchangename, exchangetype):
+    try:
+        channel.exchange_declare(exchangename, exchangetype, durable=True, passive=True)
+    except Exception as e:
+        print("Exception:", e)
+        return False
+    return True
+
+
+# if __name__ == "__main__":
+#     connection = create_connection()
+#     channel = create_channel(connection)
+#     create_queues(channel)
