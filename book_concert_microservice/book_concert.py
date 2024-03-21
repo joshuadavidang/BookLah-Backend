@@ -9,7 +9,7 @@ load_dotenv()
 
 import pika
 import json
-import amqp_connection
+import amqp_setup
 
 app = Flask(__name__)
 CORS(app)
@@ -20,12 +20,12 @@ notification_URL = "http://localhost:5003/api/v1/send_email"
 activity_log_URL = "http://localhost:5004/api/v1/activity_log"
 error_URL = "http://localhost:5005/api/v1/error"
 
-exchangename = environ.get("exchangename")
-exchangetype = environ.get("exchangetype")
-connection = amqp_connection.create_connection()
+exchangename = environ.get("EXCHANGE_NAME")
+exchangetype = environ.get("EXCHANGE_TYPE")
+connection = amqp_setup.create_connection()
 channel = connection.channel()
 
-if not amqp_connection.check_exchange(channel, exchangename, exchangetype):
+if not amqp_setup.check_exchange(channel, exchangename, exchangetype):
     print(
         "\nCreate the 'Exchange' before running this microservice. \nExiting the program."
     )
@@ -36,9 +36,10 @@ if not amqp_connection.check_exchange(channel, exchangename, exchangetype):
 def book_concert():
     if request.is_json:
         try:
-            # booking (from frontend)
+            # booking details (from frontend)
             booking = request.get_json()
-            print("\nReceived an order in JSON:", booking)
+            print(booking)
+            print("\nReceived a booking order in JSON:", booking)
             print(booking)
             result = processBookConcert(booking)
 
@@ -80,9 +81,10 @@ def processBookConcert(booking):
     print("\n-----Invoking booking microservice-----")
     # takes json from frontend and creates a booking
     booking_result = invoke_http(booking_URL, method="POST", json=booking)
-
+    print(booking_result)
     code = booking_result["code"]
     message = json.dumps(booking_result)
+
     if code not in range(200, 300):
         print(
             "\n\n-----Publishing the (booking error) message with routing_key=booking.error-----"
@@ -95,7 +97,7 @@ def processBookConcert(booking):
         )
 
         print(
-            "Booking status ({:d}) published to the RabbitMQ Exchange:".format(code),
+            "Booking status ({:d}) published to the localhost Exchange:".format(code),
             booking_result,
         )
 
@@ -106,16 +108,14 @@ def processBookConcert(booking):
         }
 
     else:
-
         print(
             "\n\n-----Publishing the (booking info) message with routing_key=booking.info-----"
         )
-
         channel.basic_publish(
             exchange=exchangename, routing_key="booking.info", body=message
         )
 
-    print("\nBooking published to RabbitMQ Exchange.\n")
+    print("\nBooking published to localhost Exchange.\n")
 
     concert_id = booking_result["data"]["concert_id"]
 
@@ -137,7 +137,7 @@ def processBookConcert(booking):
         )
 
         print(
-            "Booking status ({:d}) published to the RabbitMQ Exchange:".format(code),
+            "Booking status ({:d}) published to the localhost Exchange:".format(code),
             concert_result,
         )
 
@@ -149,16 +149,12 @@ def processBookConcert(booking):
 
     print("\n\n-----Invoking notification microservice-----")
     # send email from frontend and booking details from booking
-    notification_result = invoke_http(
-        notification_URL,
-        method="POST",
-        json=jsonify(
-            {
-                "recipient_email": "test@email.com",
-                "message": booking_result,
-            }
-        ),
-    )
+    email = booking["email"]
+    data = {
+        "recipient_email": email,
+        "message": "Thank you for booking with us!",
+    }
+    notification_result = invoke_http(notification_URL, method="POST", json=data)
     print("notification_result:", notification_result, "\n")
 
     code = notification_result["code"]
@@ -174,14 +170,12 @@ def processBookConcert(booking):
             body=message,
             properties=pika.BasicProperties(delivery_mode=2),
         )
-
         print(
-            "Notification status ({:d}) published to the RabbitMQ Exchange:".format(
+            "Notification status ({:d}) published to the localhost Exchange:".format(
                 code
             ),
             notification_result,
         )
-
         return {
             "code": 500,
             "data": {"notification_result": notification_result},
@@ -189,26 +183,23 @@ def processBookConcert(booking):
         }
 
     else:
-
         print(
             "\n\n-----Publishing the (notification info) message with routing_key=notification.info-----"
         )
-
         channel.basic_publish(
             exchange=exchangename, routing_key="notification.info", body=message
         )
+    print("\nNotification published to localhost Exchange.\n")
 
-    print("\nNotification published to RabbitMQ Exchange.\n")
+    print("###### Booking Successful ######\n")
 
     return {
         "code": 201,
         "data": {
             "booking_result": booking_result,
-            "concert_result": concert_result,
         },
     }
 
 
 if __name__ == "__main__":
-    print("This is flask " + os.path.basename(__file__) + " for placing an order...")
     app.run(host="0.0.0.0", port=5100, debug=True)
