@@ -123,7 +123,7 @@ def process_cancel_concert(booked_users_for_concert, concert_id):
 
 
 
-        return {"code": 200, "data": {"notification_result": notification_result, "payment_result": payment_result, "cancel_event_result": cancel_event_result}}
+        return {"code": 200, "data": {"notification_result": notification_result, "payment_result": payment_result, "cancel_event_result": cancel_concert_result}}
     
     except Exception as e:
         return {"code": 500, "message": f"An error occurred while processing cancelation: {str(e)}"}
