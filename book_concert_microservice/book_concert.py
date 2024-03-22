@@ -4,6 +4,7 @@ import os, sys
 from os import environ
 from dotenv import load_dotenv
 from invokes import invoke_http
+import uuid
 
 load_dotenv()
 
@@ -186,9 +187,13 @@ def processBookConcert(booking):
         print(
             "\n\n-----Publishing the (notification info) message with routing_key=notification.info-----"
         )
+        correlation_id = str(uuid.uuid4())
+
         channel.basic_publish(
-            exchange=exchangename, routing_key="notification.info", body=message
+            exchange=exchangename, routing_key="notification.info", body=message, 
+            properties=pika.BasicProperties(correlation_id=correlation_id)
         )
+        
     print("\nNotification published to localhost Exchange.\n")
 
     print("###### Booking Successful ######\n")
