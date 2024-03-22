@@ -34,7 +34,7 @@ class Concert(db.Model):
         nullable=False,
         default="AVAILABLE",
     )
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now())
     created_by = db.Column(db.String(50), nullable=False)
 
     def __init__(
@@ -217,14 +217,23 @@ def addConcert(concert_id):
             500,
         )
 
-    return jsonify({"code": 201, "data": concert.json()}), 201
+    return (
+        jsonify(
+            {
+                "code": 201,
+                "data": concert.json(),
+                "message": "A new concert has been added",
+            }
+        ),
+        201,
+    )
 
 
 @app.route("/api/v1/updateConcertAvailability/<string:concert_id>", methods=["PUT"])
 def updateConcertAvailability(concert_id):
     """
     For admins to update concert availability
-    AVAILABLE | UNAVAILABLE
+    AVAILABLE | CANCELLED
     """
 
     concert = db.session.query(Concert).filter_by(concert_id=concert_id).first()
@@ -311,6 +320,7 @@ def updateConcertDetails(concert_id):
         )
 
 
+### TO REMOVE
 class Product(db.Model):
     __tablename__ = "product"
     concert_id = db.Column(UUID(as_uuid=True), primary_key=True)
