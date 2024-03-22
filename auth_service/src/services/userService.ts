@@ -17,7 +17,6 @@ class userService {
   public async saveUserInformation(
     userId: string,
     name: string,
-    gender: string,
     userType: UserType
   ) {
     const result = await this.isUserExist(userId);
@@ -25,16 +24,11 @@ class userService {
       const newUser = new User();
       newUser.userId = userId;
       newUser.name = name;
-      newUser.gender = gender;
       newUser.userType = userType;
       return AppDataSource.manager.save(newUser);
     } else {
       console.log(ErrorsType.USER_EXIST);
     }
-  }
-
-  public fetchUserData() {
-    return;
   }
 }
 

@@ -1,0 +1,136 @@
+version: "3.8"
+
+services:
+  #########################
+  ### Postgres Database ###
+  #########################
+  db:
+    image: postgres:latest
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+
+  ################
+  ### RabbitMQ ###
+  ################
+  rabbitmq:
+    image: rabbitmq:3-management
+    hostname: rabbitmq
+    container_name: rabbitmq
+    restart: always
+    ports:
+      - 5672:5672
+      - 15672:15672
+
+  ###########################
+  ### Simple Auth Service ###
+  ###########################
+  auth_service:
+    build: ./auth_service
+    container_name: auth_service
+    restart: always
+    ports:
+      - 3001:3001
+    environment:
+      - CLIENT_PORT=${CLIENT_PORT}
+      - SERVER_PORT=${SERVER_PORT}
+      - API_VERSION=${API_VERSION}
+      - REDIRECT_URL=${REDIRECT_URL}
+      - SGID_CLIENT_ID=${SGID_CLIENT_ID}
+      - SGID_CLIENT_SECRET=${SGID_CLIENT_SECRET}
+      - SGID_PRIVATE_KEY:${SGID_PRIVATE_KEY}
+      - TYPE=${TYPE}
+      - HOST=${HOST}
+      - DB_PORT=${DB_PORT}
+      - USERNAME=${USERNAME}
+      - PASSWORD=${PASSWORD}
+      - DATABASE=${DATABASE}
+      - DOMAIN=${DOMAIN}
+    depends_on:
+      - db
+
+  ##############################
+  ### Simple Booking Service ###
+  ##############################
+  booking_service:
+    build: ./booking_service
+    container_name: booking_service
+    restart: always
+    ports:
+      - 5001:5001
+    environment:
+      - DATABASE_URI=${BOOKING_SERVICE_DATABASE_URI}
+    depends_on:
+      - rabbitmq
+      - auth_service
+
+  ##############################
+  ### Simple Concert Service ###
+  ##############################
+  concert_service:
+    build: ./concert_service
+    container_name: concert_service
+    restart: always
+    ports:
+      - 5002:5002
+    environment:
+      - DATABASE_URI=${CONCERT_SERVICE_DATABASE_URI}
+      - STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+    depends_on:
+      - rabbitmq
+      - auth_service
+
+  ###################################
+  ### Simple Notification Service ###
+  ###################################
+  notification_service:
+    build: ./notification_service
+    container_name: notification_service
+    restart: always
+    ports:
+      - 5003:5003
+    environment:
+      - MAILTRAP_API_KEY=${MAILTRAP_API_KEY}
+    depends_on:
+      - rabbitmq
+      - auth_service
+
+  ##############################
+  ### Simple Payment Service ###
+  ##############################
+  payment_service:
+    build: ./payment_service
+    container_name: payment_service
+    restart: always
+    ports:
+      - 5006:5006
+    environment:
+      - DATABASE_URI=${PAYMENT_SERVICE_DATABASE_URI}
+      - STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+    depends_on:
+      - rabbitmq
+      - auth_service
+
+  ####################################
+  ### Book Concert Complex Service ###
+  ####################################
+  book_concert_microservice:
+    build: ./book_concert_microservice
+    container_name: book_concert_microservice
+    restart: always
+    ports:
+      - 5100:5100
+    environment:
+      - EXCHANGE_NAME=${EXCHANGE_NAME}
+      - EXCHANGE_TYPE=${EXCHANGE_TYPE}
+    depends_on:
+      - rabbitmq
+      - auth_service
+      - booking_service
+      - notification_service

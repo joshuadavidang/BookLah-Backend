@@ -1,7 +1,6 @@
-FROM python:3-slim
+FROM python:3.12-slim
 WORKDIR /usr/src/app
 COPY requirements.txt ./
 RUN python3 -m pip install --no-cache-dir -r requirements.txt
-COPY ./dbConfig.py  .
-COPY ./concerts.py  .
-CMD ["python3", "concerts.py"]
+COPY ./payment.py .
+CMD [ "python3", "./payment.py"]
