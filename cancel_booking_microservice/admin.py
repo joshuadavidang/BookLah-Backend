@@ -174,5 +174,3 @@ def process_cancel_concert(booked_users_for_concert, concert_id):
 if __name__ == "__main__":
     print("This is flask " + os.path.basename(__file__) + " for canceling concerts...")
     app.run(host="0.0.0.0", port=5200, debug=True)
-
-        return {"code": 200, "data": {"notification_result": notification_result, "payment_result": payment_result, "cancel_event_result": cancel_concert_result}}
