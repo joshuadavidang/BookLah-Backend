@@ -2,12 +2,13 @@ from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 import uuid
 import os
+from dbConfig import app, db, PORT
 
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URI")
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+# app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URI")
+# app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 PORT = 5001
-db = SQLAlchemy(app)
+# db = SQLAlchemy(app)
 
 ######## 3 ENDPOINTS ########
 

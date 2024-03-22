@@ -7,6 +7,21 @@ from sqlalchemy.orm import relationship
 from flask_cors import CORS
 
 
+class Forums(db.Model):
+    __tablename__ = "forums"
+    concert_id = db.Column(db.String, primary_key=True)
+
+    posts = relationship("Posts", backref="forum_posts")
+
+    def __init__(self, concert_id):
+        self.concert_id = concert_id
+
+    def json(self):
+        return {
+            "concert_id": self.concert_id,
+        }
+
+
 class Posts(db.Model):
     __tablename__ = "posts"
     post_id = db.Column(db.Integer, primary_key=True)
@@ -17,6 +32,9 @@ class Posts(db.Model):
     last_edit_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     views = db.Column(db.Integer, nullable=False, default=0)
     replies = db.Column(db.Integer, nullable=False, default=0)
+    forum_concert_id = db.Column(
+        db.Integer, db.ForeignKey("forums.concert_id"), nullable=False
+    )
 
     comments = relationship("Comments", backref="post_comments")
 
@@ -30,6 +48,7 @@ class Posts(db.Model):
         last_edit_date,
         views,
         replies,
+        forum_concert_id,
     ):
         self.post_id = post_id
         self.user_id = user_id
@@ -39,6 +58,7 @@ class Posts(db.Model):
         self.last_edit_date = last_edit_date
         self.views = views
         self.replies = replies
+        self.forum_concert_id = forum_concert_id
 
     def json(self):
         return {
@@ -50,17 +70,19 @@ class Posts(db.Model):
             "last_edit_date": self.last_edit_date,
             "views": self.views,
             "replies": self.replies,
+            "forum_concert_id": self.forum_concert_id,
         }
-    
+
+
 class Comments(db.Model):
     __tablename__ = "comments"
     comment_id = db.Column(db.Integer, primary_key=True)
-    post_id = db.Column(db.Integer, ForeignKey('posts.post_id'), nullable=False)
+    post_id = db.Column(db.Integer, ForeignKey("posts.post_id"), nullable=False)
     content = db.Column(db.Text, nullable=False)
     creation_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     last_edit_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
-    post = relationship("Posts", back_populates="comments")
+    post = relationship("Posts", back_populates="comments", overlaps="post_comments")
 
     def json(self):
         return {
@@ -99,9 +121,7 @@ def getPost(post_id):
 
 @app.route("/addPost/<string:post_id>", methods=["POST"])
 def addPost(post_id):
-    if db.session.scalars(
-        db.select(Posts).filter_by(post_id=post_id).limit(1)
-    ).first():
+    if db.session.scalars(db.select(Posts).filter_by(post_id=post_id).limit(1)).first():
         return (
             jsonify(
                 {
@@ -114,11 +134,10 @@ def addPost(post_id):
         )
 
     data = request.get_json()
-    post_id = data.get('post_id')  # Get 'post_id' value if exists
+    post_id = data.get("post_id")  # Get 'post_id' value if exists
     if post_id:
-        del data['post_id']  # Remove 'post_id' key from data dictionary
+        del data["post_id"]  # Remove 'post_id' key from data dictionary
     post = Posts(post_id, **data)
-
 
     try:
         db.session.add(post)
@@ -177,7 +196,8 @@ def deletePost(post_id):
             ),
             404,
         )
-    
+
+
 @app.route("/updatePost/<string:post_id>", methods=["PUT"])
 def updatePost(post_id):
     post = Posts.query.get(post_id)
@@ -195,8 +215,16 @@ def updatePost(post_id):
         return jsonify({"code": 200, "data": post.json()}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({"code": 500, "message": f"An error occurred updating the post: {str(e)}"}), 500
-    
+        return (
+            jsonify(
+                {
+                    "code": 500,
+                    "message": f"An error occurred updating the post: {str(e)}",
+                }
+            ),
+            500,
+        )
+
 
 @app.route("/addComment/<string:post_id>", methods=["POST"])
 def addComment(post_id):
@@ -205,8 +233,8 @@ def addComment(post_id):
         return jsonify({"code": 404, "message": "Post not found."}), 404
 
     data = request.get_json()
-    comment_id = data.get('comment_id')
-    content = data.get('content')
+    comment_id = data.get("comment_id")
+    content = data.get("content")
 
     comment = Comments(post_id=post_id, comment_id=comment_id, content=content)
 
@@ -217,8 +245,16 @@ def addComment(post_id):
         return jsonify({"code": 201, "data": comment.json()}), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({"code": 500, "message": f"An error occurred creating the comment: {str(e)}"}), 500
-    
+        return (
+            jsonify(
+                {
+                    "code": 500,
+                    "message": f"An error occurred creating the comment: {str(e)}",
+                }
+            ),
+            500,
+        )
+
 
 @app.route("/getComments/<string:post_id>")
 def getComments(post_id):
@@ -229,7 +265,7 @@ def getComments(post_id):
         return jsonify({"code": 200, "data": comments_data}), 200
     else:
         return jsonify({"code": 404, "message": "No comments found for the post."}), 404
-    
+
 
 @app.route("/updateComment/<string:comment_id>", methods=["PUT"])
 def updateComment(comment_id):
@@ -239,7 +275,7 @@ def updateComment(comment_id):
         return jsonify({"code": 404, "message": "Comment not found."}), 404
 
     data = request.get_json()
-    content = data.get('content')
+    content = data.get("content")
 
     comment.content = content
 
@@ -248,8 +284,16 @@ def updateComment(comment_id):
         return jsonify({"code": 200, "data": comment.json()}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({"code": 500, "message": f"An error occurred updating the comment: {str(e)}"}), 500
-    
+        return (
+            jsonify(
+                {
+                    "code": 500,
+                    "message": f"An error occurred updating the comment: {str(e)}",
+                }
+            ),
+            500,
+        )
+
 
 @app.route("/deleteComment/<string:comment_id>", methods=["DELETE"])
 def deleteComment(comment_id):
@@ -266,10 +310,84 @@ def deleteComment(comment_id):
         return jsonify({"code": 200, "message": "Comment deleted successfully."}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({"code": 500, "message": f"An error occurred deleting the comment: {str(e)}"}), 500
+        return (
+            jsonify(
+                {
+                    "code": 500,
+                    "message": f"An error occurred deleting the comment: {str(e)}",
+                }
+            ),
+            500,
+        )
 
 
+# Create a new forum
+@app.route("/addForums", methods=["POST"])
+def create_forum():
+    data = request.get_json()
+    concert_id = data.get("concert_id")
 
+    new_forum = Forums(concert_id=concert_id)
+
+    try:
+        db.session.add(new_forum)
+        db.session.commit()
+        return jsonify({"code": 201, "data": new_forum.json()}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"code": 500, "message": f"An error occurred: {str(e)}"}), 500
+
+
+# Get all forums
+@app.route("/forums", methods=["GET"])
+def get_forums():
+    forums = Forums.query.all()
+    forum_list = [forum.json() for forum in forums]
+    return jsonify({"code": 200, "data": forum_list}), 200
+
+
+# Get a specific forum by concert_id
+@app.route("/forums/<string:concert_id>", methods=["GET"])
+def get_forum(concert_id):
+    forum = Forums.query.get(concert_id)
+    if forum:
+        return jsonify({"code": 200, "data": forum.json()}), 200
+    else:
+        return jsonify({"code": 404, "message": "Forum not found."}), 404
+
+
+# Update a forum by concert_id
+@app.route("/updateForums/<string:concert_id>", methods=["PUT"])
+def update_forum(concert_id):
+    forum = Forums.query.get(concert_id)
+    if not forum:
+        return jsonify({"code": 404, "message": "Forum not found."}), 404
+
+    data = request.get_json()
+    forum.concert_id = data.get("concert_id", forum.concert_id)
+
+    try:
+        db.session.commit()
+        return jsonify({"code": 200, "data": forum.json()}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"code": 500, "message": f"An error occurred: {str(e)}"}), 500
+
+
+# Delete a forum by concert_id
+@app.route("/deleteForums/<string:concert_id>", methods=["DELETE"])
+def delete_forum(concert_id):
+    forum = Forums.query.get(concert_id)
+    if not forum:
+        return jsonify({"code": 404, "message": "Forum not found."}), 404
+
+    try:
+        db.session.delete(forum)
+        db.session.commit()
+        return jsonify({"code": 200, "message": "Forum deleted successfully."}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"code": 500, "message": f"An error occurred: {str(e)}"}), 500
 
 
 if __name__ == "__main__":
