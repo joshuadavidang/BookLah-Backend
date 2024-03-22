@@ -21,7 +21,6 @@ payment_URL= "http://localhost:5006/api/v1/refund_payment"
 
 exchangename = "order_topic" # exchange name
 exchangetype="topic" # use a 'topic' exchange to enable interaction
-
 connection = amqp_connection.create_connection() 
 channel = connection.channel()
 
@@ -63,22 +62,65 @@ def cancel_concert():
     return jsonify({"code": 400, "message": "Invalid JSON input: " + str(request.get_data())}), 400
 
 def process_cancel_concert(booked_users_for_concert, concert_id):
-    try:
-        # Perform necessary actions for canceling concert
-        # Example:
-        # 1. Notify ticket holders
-        # 2. Trigger refunds
-        # 3. Cancel event in the event microservice
 
         # Example of canceling event
-        print('\n-----Canceling concert-----')
+        print('\n-----Invoking concert microservice-----')
         cancel_concert_result = invoke_http(concert_URL, method='POST', json=booked_users_for_concert)
         print('cancel_concert_result:', cancel_concert_result)
+        code = cancel_concert_result["code"]
+        message = json.dumps(cancel_concert_result)
+
+        if code not in range(200, 300):
+            print(
+                "\n\n-----Publishing the (event error) message with routing_key=event.error-----"
+            )
+            
+            channel.basic_publish(
+                exchange=exchangename,
+                routing_key="event.error",
+                body=message,
+                properties=pika.BasicProperties(delivery_mode=2),
+            )
+
+            print(
+                "Booking status ({:d}) published to the localhost Exchange:".format(code),
+                cancel_concert_result,
+            )
+
+            return {
+                "code": 500,
+                "data": {"concert_result": cancel_concert_result},
+                "message": "Simulated event error sent for error handling.",
+            }
+
 
          # Example of triggering refunds
         print('\n-----Triggering refunds-----')
         payment_result = invoke_http(payment_URL, method='POST', json=booked_users_for_concert)
         print('refund_result:', payment_result)
+
+        if code not in range(200, 300):
+            print(
+                "\n\n-----Publishing the (event error) message with routing_key=event.error-----"
+            )
+            message = json.dumps(payment_result)
+            channel.basic_publish(
+                exchange=exchangename,
+                routing_key="event.error",
+                body=message,
+                properties=pika.BasicProperties(delivery_mode=2),
+            )
+
+            print(
+                "Booking status ({:d}) published to the localhost Exchange:".format(code),
+                payment_result,
+            )
+
+            return {
+                "code": 500,
+                "data": {"payment_result": payment_result},
+                "message": "Simulated event error sent for error handling.",
+            }
 
         # Example of notifying ticket holders
         print('\n-----Notifying ticket holders-----')
@@ -98,7 +140,6 @@ def process_cancel_concert(booked_users_for_concert, concert_id):
             channel.basic_publish(exchange=exchangename, routing_key="order.error", 
                 body=message, properties=pika.BasicProperties(delivery_mode = 2)) 
             # make message persistent within the matching queues until it is received by some receiver 
-            # (the matching queues have to exist and be durable and bound to the exchange)
 
             # - reply from the invocation is not used;
             # continue even if this invocation fails        
@@ -112,22 +153,26 @@ def process_cancel_concert(booked_users_for_concert, concert_id):
                 "message": "Notification creation failure sent for error handling."
             }
         else:
-            # 4. Record new order
-            # record the activity log anyway
-            #print('\n\n-----Invoking activity_log microservice-----')
             print('\n\n-----Publishing the (notification info) message with routing_key= notification.info-----')        
-
-            # invoke_http(activity_log_URL, method="POST", json=order_result)            
+        
             channel.basic_publish(exchange=exchangename, routing_key="notification.info", 
                 body=message)
+        
+        print("\nNotification published to localhost Exchange.\n")
+
+        print("###### Booking Successfully Cancelled ######\n")
 
 
-
-        return {"code": 200, "data": {"notification_result": notification_result, "payment_result": payment_result, "cancel_event_result": cancel_concert_result}}
+        return {
+            "code": 200, 
+            "data": {
+                "notification_result":notification_result
+            }
+        }
     
-    except Exception as e:
-        return {"code": 500, "message": f"An error occurred while processing cancelation: {str(e)}"}
 
 if __name__ == "__main__":
     print("This is flask " + os.path.basename(__file__) + " for canceling concerts...")
     app.run(host="0.0.0.0", port=5200, debug=True)
+
+        return {"code": 200, "data": {"notification_result": notification_result, "payment_result": payment_result, "cancel_event_result": cancel_concert_result}}
