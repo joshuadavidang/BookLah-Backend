@@ -8,7 +8,7 @@ app = Flask(__name__)
 CORS(app)
 
 booking_URL = ""
-forum_URL = "http://localhost:5003/forum"
+forum_URL = "http://localhost:5003"
 
 @app.route("/get_forum", methods=['GET'])
 def get_forum():
