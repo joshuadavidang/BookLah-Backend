@@ -117,35 +117,6 @@ def create_payment_intent():
         return jsonify({"error": {"message": e.user_message}}), 500
 
 
-@app.route("/api/v1/processPayment", methods=["POST"])
-def create_session():
-    data = request.get_json()
-    concert_id = data["concert_id"]
-    category = data["category"]
-    quantity = data["quantity"]
-
-    stripeids = get_stripeids(concert_id, category).json
-
-    try:
-        checkout_session = stripe.checkout.Session.create(
-            line_items=[
-                {
-                    "price": stripeids["data"]["price_id"],
-                    "quantity": quantity,
-                },
-            ],
-            mode="payment",
-            invoice_creation={"enabled": True},
-            success_url=FRONT_END_DOMAIN + "/success?session_id={CHECKOUT_SESSION_ID}",
-            cancel_url=FRONT_END_DOMAIN + "/error",
-        )
-
-    except Exception as e:
-        return str(e)
-
-    return jsonify({"checkout_url": checkout_session.url})
-
-
 ## WEBHOOK
 @app.route("/webhook", methods=["POST"])
 def webhook_recieved():
