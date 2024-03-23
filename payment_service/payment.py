@@ -85,31 +85,29 @@ def get_stripeids(concert_id, category):
     )
 
 
-## GET EMAIL
-@app.route("/api/v1/getCustomerEmail", methods=["POST"])
+## GET CUSTOMER DATA FROM STRIPE AFTER PAYMENT IS SUCCESSFUL
+@app.route("/api/v1/getCustomerData", methods=["POST"])
 def getCustomerInfo():
-    session_id = request.get_json().get("sessionId")
-    checkout_session = stripe.checkout.Session.retrieve(session_id)
-    email = checkout_session.customer_details.email
-    return jsonify({"code": 200, "email": email})
+    client_secret = request.get_json().get("client_secret")
+    data = stripe.PaymentIntent.retrieve(client_secret)
+    return jsonify({"code": 200, "data": data})
 
 
 ## COMPLEX 1
-@app.route("/api/v1/create_payment_intent", methods=["GET"])
+@app.route("/api/v1/create_payment_intent", methods=["POST"])
 def create_payment_intent():
 
     # concert_id = request.json.get("concert_id", None)
     # category = request.json.get("category", None)
-    # price = request.json.get("price", None)
+    email = request.json.get("email", None)
+    price = request.json.get("price", None)
 
-    price = 1000
     # stripeids = get_stripeids(concert_id, category)["data"]
 
     try:
 
         payment = stripe.PaymentIntent.create(
-            amount=price * 100,
-            currency="sgd",
+            amount=price * 100, currency="sgd", receipt_email=email
         )
 
         return jsonify({"client_secret": payment.client_secret})
