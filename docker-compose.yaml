@@ -117,6 +117,20 @@ services:
       - rabbitmq
       - auth_service
 
+  ##############################
+  ### Simple Forum Service ###
+  ##############################
+  forum_service:
+    build: ./forum_service
+    container_name: forum_service
+    restart: always
+    ports:
+      - 5007:5007
+    environment:
+      - DATABASE_URI=${FORUM_SERVICE_DATABASE_URI}
+    depends_on:
+      - auth_service
+
   ####################################
   ### Book Concert Complex Service ###
   ####################################
