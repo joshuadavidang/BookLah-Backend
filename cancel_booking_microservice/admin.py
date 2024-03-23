@@ -11,7 +11,7 @@ import amqp_connection
 app = Flask(__name__)
 CORS(app)
 
-booking_URL = "http://localhost:5001/api/v1/create_booking"
+booking_URL = "http://localhost:5001/api/v1/get_bookings"
 concert_URL = "http://localhost:5002/api/v1/isConcertSoldOut/"
 notification_URL = "http://localhost:5003/api/v1/send_email"
 activity_log_URL = "http://localhost:5004/api/v1/activity_log"
@@ -19,7 +19,7 @@ error_URL = "http://localhost:5005/api/v1/error"
 payment_URL= "http://localhost:5006/api/v1/refund_payment"
 
 
-exchangename = "order_topic" # exchange name
+exchangename = "booking_topic" # exchange name
 exchangetype="topic" # use a 'topic' exchange to enable interaction
 connection = amqp_connection.create_connection() 
 channel = connection.channel()

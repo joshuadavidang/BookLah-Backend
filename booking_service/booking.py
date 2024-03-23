@@ -4,7 +4,8 @@ import uuid
 import os
 
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URI")
+app.config["SQLALCHEMY_DATABASE_URI"] = 'mysql+mysqlconnector://root@localhost:3306/booking'
+#app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URI")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 PORT = 5001
 db = SQLAlchemy(app)
@@ -12,8 +13,8 @@ db = SQLAlchemy(app)
 ######## 3 ENDPOINTS ########
 
 # /api/v1/get_bookings
-# /api/v1/get_booking/<string:booking_id>
-# /api/v1//api/v1/create_booking
+# /api/v1/get_bookings/<string:booking_id>
+# /api/v1/create_booking
 
 
 class Booking(db.Model):
@@ -57,7 +58,7 @@ def get_all_bookings():
     return jsonify({"code": 404, "message": "There are no bookings."}), 404
 
 
-@app.route("/api/v1/get_booking/<string:booking_id>", methods=["GET"])
+@app.route("/api/v1/get_bookings/<string:booking_id>", methods=["GET"])
 def find_booking_by_id(booking_id):
     booking = Booking.query.get(booking_id)
     if booking:

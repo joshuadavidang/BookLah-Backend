@@ -2,7 +2,7 @@ import time
 import pika
 
 hostname = "localhost"
-port = 5006
+port = 5672
 
 
 # function to create a connection to the broker
