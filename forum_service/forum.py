@@ -3,40 +3,36 @@ from dbConfig import app, db, PORT
 from datetime import datetime
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import UUID
 
 
 class Posts(db.Model):
     __tablename__ = "posts"
-    post_id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, nullable=False)
+    post_id = db.Column(UUID(as_uuid=True), primary_key=True)
+    concert_id = db.Column(db.String(255), nullable=False)
+    user_id = db.Column(db.String(255), nullable=False)
     title = db.Column(db.String(255), nullable=False)
     content = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
-    edited_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now())
+    edited_at = db.Column(db.DateTime, nullable=False, default=datetime.now())
     views = db.Column(db.Integer, nullable=False, default=0)
     replies = db.Column(db.Integer, nullable=False, default=0)
 
-    comments = relationship("Comments", backref="post_comments")
+    comments = relationship("Comments", backref="post")
 
     def __init__(
         self,
         post_id,
+        concert_id,
         user_id,
         title,
         content,
-        created_at,
-        edited_at,
-        views,
-        replies,
     ):
         self.post_id = post_id
+        self.concert_id = concert_id
         self.user_id = user_id
         self.title = title
         self.content = content
-        self.created_at = created_at
-        self.edited_at = edited_at
-        self.views = views
-        self.replies = replies
 
     def json(self):
         return {
@@ -44,10 +40,6 @@ class Posts(db.Model):
             "user_id": self.user_id,
             "title": self.title,
             "content": self.content,
-            "created_at": self.created_at,
-            "edited_at": self.edited_at,
-            "views": self.views,
-            "replies": self.replies,
         }
 
 
@@ -56,18 +48,14 @@ class Comments(db.Model):
     comment_id = db.Column(db.Integer, primary_key=True)
     post_id = db.Column(db.Integer, ForeignKey("posts.post_id"), nullable=False)
     content = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
-    edited_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
-
-    post = relationship("Posts", back_populates="comments")
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now())
+    edited_at = db.Column(db.DateTime, nullable=False, default=datetime.now())
 
     def json(self):
         return {
             "comment_id": self.comment_id,
             "post_id": self.post_id,
             "content": self.content,
-            "created_at": self.created_at,
-            "edited_at": self.edited_at,
         }
 
 
@@ -111,7 +99,8 @@ def addPost(post_id):
         )
 
     data = request.get_json()
-    post_id = data.get("post_id")  # Get 'post_id' value if exists
+    post_id = data.get("post_id")  # Get concert_id from FE
+
     if post_id:
         del data["post_id"]  # Remove 'post_id' key from data dictionary
     post = Posts(post_id, **data)
