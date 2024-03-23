@@ -55,9 +55,9 @@ class PaymentIntent(db.Model):
         }
 
 
-@app.route("/config")
+@app.route("/api/v1/config")
 def get_config():
-    return jsonify({"publishable_key": os.getenv("STRIPE_PUBLIC_KEY")})
+    return jsonify({"code": 200, "publishable_key": os.getenv("STRIPE_PUBLIC_KEY")})
 
 
 ##STRIPE IDS
@@ -95,28 +95,28 @@ def getCustomerInfo():
 
 
 ## COMPLEX 1
-# @app.route("/api/v1/processPayment", methods=["POST"])
-# def create_session():
+@app.route("/api/v1/create_payment_intent", methods=["GET"])
+def create_payment_intent():
 
-#     # concert_id = request.json.get("concert_id", None)
-#     # category = request.json.get("category", None)
-#     # price = request.json.get("price", None)
+    # concert_id = request.json.get("concert_id", None)
+    # category = request.json.get("category", None)
+    # price = request.json.get("price", None)
 
-#     price= 1000
-#     # stripeids = get_stripeids(concert_id, category)["data"]
+    price = 1000
+    # stripeids = get_stripeids(concert_id, category)["data"]
 
-#     try:
+    try:
 
-#         payment = stripe.PaymentIntent.create(
-#             amount=price * 100,
-#             currency="sgd",
-#             )
+        payment = stripe.PaymentIntent.create(
+            amount=price * 100,
+            currency="sgd",
+        )
 
-#         return jsonify({"client_secret": payment.client_secret})
-#     except stripe.error.StripeError as e:
-#         return jsonify({"error": {"message": e.user_message}}), 400
-#     except Exception as e:
-#         return jsonify({"error": {"message": e.user_message}}), 500
+        return jsonify({"client_secret": payment.client_secret})
+    except stripe.error.StripeError as e:
+        return jsonify({"error": {"message": e.user_message}}), 400
+    except Exception as e:
+        return jsonify({"error": {"message": e.user_message}}), 500
 
 
 @app.route("/api/v1/processPayment", methods=["POST"])
