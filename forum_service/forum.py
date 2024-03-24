@@ -72,9 +72,21 @@ def getPosts():
     return jsonify({"code": 404, "message": "There are no posts."}), 404
 
 
+@app.route("/api/v1/getPostsByUserId/<string:user_id>")
+def getPostsByUserId(user_id):
+    posts = db.session.scalars(db.select(Posts).filter_by(user_id=user_id)).all()
+    if len(posts):
+        return jsonify(
+            {
+                "code": 200,
+                "data": {"posts": [post.json() for post in posts]},
+            }
+        )
+    return jsonify({"code": 404, "message": "There are no posts."}), 404
+
+
 @app.route("/api/v1/getPost/<string:post_id>")
 def getPost(post_id):
-
     post = db.session.scalars(
         db.select(Posts).filter_by(post_id=post_id).limit(1)
     ).first()
