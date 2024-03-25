@@ -1,100 +1,68 @@
 from flask import request, jsonify
 from dbConfig import app, db, PORT
-from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
-from flask_cors import CORS
-
-
-class Forums(db.Model):
-    __tablename__ = "forums"
-    concert_id = db.Column(db.String, primary_key=True)
-
-    posts = relationship("Posts", backref="forum_posts")
-
-    def __init__(self, concert_id):
-        self.concert_id = concert_id
-
-    def json(self):
-        return {
-            "concert_id": self.concert_id,
-        }
+from sqlalchemy.dialects.postgresql import UUID
 
 
 class Posts(db.Model):
     __tablename__ = "posts"
-    post_id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, nullable=False)
+    post_id = db.Column(UUID(as_uuid=True), primary_key=True)
+    concert_id = db.Column(db.String(255), nullable=False)
+    user_id = db.Column(db.String(255), nullable=False)
     title = db.Column(db.String(255), nullable=False)
     content = db.Column(db.Text, nullable=False)
-    creation_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    last_edit_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now())
+    edited_at = db.Column(db.DateTime, nullable=False, default=datetime.now())
     views = db.Column(db.Integer, nullable=False, default=0)
     replies = db.Column(db.Integer, nullable=False, default=0)
-    forum_concert_id = db.Column(
-        db.Integer, db.ForeignKey("forums.concert_id"), nullable=False
-    )
 
-    comments = relationship("Comments", backref="post_comments")
+    comments = relationship("Comments", backref="post")
 
     def __init__(
         self,
         post_id,
+        concert_id,
         user_id,
         title,
         content,
-        creation_date,
-        last_edit_date,
-        views,
-        replies,
-        forum_concert_id,
     ):
         self.post_id = post_id
+        self.concert_id = concert_id
         self.user_id = user_id
         self.title = title
         self.content = content
-        self.creation_date = creation_date
-        self.last_edit_date = last_edit_date
-        self.views = views
-        self.replies = replies
-        self.forum_concert_id = forum_concert_id
 
     def json(self):
         return {
             "post_id": self.post_id,
+            "concert_id": self.concert_id,
             "user_id": self.user_id,
             "title": self.title,
             "content": self.content,
-            "creation_date": self.creation_date,
-            "last_edit_date": self.last_edit_date,
-            "views": self.views,
-            "replies": self.replies,
-            "forum_concert_id": self.forum_concert_id,
         }
 
 
 class Comments(db.Model):
     __tablename__ = "comments"
-    comment_id = db.Column(db.Integer, primary_key=True)
-    post_id = db.Column(db.Integer, ForeignKey("posts.post_id"), nullable=False)
+    comment_id = db.Column(UUID(as_uuid=True), primary_key=True)
+    post_id = db.Column(UUID(as_uuid=True), ForeignKey("posts.post_id"), nullable=False)
+    user_id = db.Column(db.String(255), nullable=False)
     content = db.Column(db.Text, nullable=False)
-    creation_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    last_edit_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-
-    post = relationship("Posts", back_populates="comments", overlaps="post_comments")
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now())
+    edited_at = db.Column(db.DateTime, nullable=False, default=datetime.now())
 
     def json(self):
         return {
             "comment_id": self.comment_id,
             "post_id": self.post_id,
             "content": self.content,
-            "creation_date": self.creation_date,
-            "last_edit_date": self.last_edit_date,
+            "user_id": self.user_id,
         }
 
 
-@app.route("/getPosts")
+@app.route("/api/v1/getPosts")
 def getPosts():
     posts = db.session.scalars(db.select(Posts)).all()
     if len(posts):
@@ -107,9 +75,21 @@ def getPosts():
     return jsonify({"code": 404, "message": "There are no posts."}), 404
 
 
-@app.route("/getPost/<string:post_id>")
-def getPost(post_id):
+@app.route("/api/v1/getPostsByUserId/<string:user_id>")
+def getPostsByUserId(user_id):
+    posts = db.session.scalars(db.select(Posts).filter_by(user_id=user_id)).all()
+    if len(posts):
+        return jsonify(
+            {
+                "code": 200,
+                "data": {"posts": [post.json() for post in posts]},
+            }
+        )
+    return jsonify({"code": 404, "message": "There are no posts."}), 404
 
+
+@app.route("/api/v1/getPost/<string:post_id>")
+def getPost(post_id):
     post = db.session.scalars(
         db.select(Posts).filter_by(post_id=post_id).limit(1)
     ).first()
@@ -119,7 +99,7 @@ def getPost(post_id):
     return jsonify({"code": 404, "message": "post not found."}), 404
 
 
-@app.route("/addPost/<string:post_id>", methods=["POST"])
+@app.route("/api/v1/addPost/<string:post_id>", methods=["POST"])
 def addPost(post_id):
     if db.session.scalars(db.select(Posts).filter_by(post_id=post_id).limit(1)).first():
         return (
@@ -134,7 +114,8 @@ def addPost(post_id):
         )
 
     data = request.get_json()
-    post_id = data.get("post_id")  # Get 'post_id' value if exists
+    post_id = data.get("post_id")  # Get concert_id from FE
+
     if post_id:
         del data["post_id"]  # Remove 'post_id' key from data dictionary
     post = Posts(post_id, **data)
@@ -157,7 +138,7 @@ def addPost(post_id):
     return jsonify({"code": 201, "data": post.json()}), 201
 
 
-@app.route("/deletePost/<string:post_id>", methods=["DELETE"])
+@app.route("/api/v1/deletePost/<string:post_id>", methods=["DELETE"])
 def deletePost(post_id):
     post = db.session.query(Posts).filter_by(post_id=post_id).first()
     if post:
@@ -198,7 +179,7 @@ def deletePost(post_id):
         )
 
 
-@app.route("/updatePost/<string:post_id>", methods=["PUT"])
+@app.route("/api/v1/updatePost/<string:post_id>", methods=["PUT"])
 def updatePost(post_id):
     post = Posts.query.get(post_id)
 
@@ -226,17 +207,20 @@ def updatePost(post_id):
         )
 
 
-@app.route("/addComment/<string:post_id>", methods=["POST"])
+@app.route("/api/v1/addComment/<string:post_id>", methods=["POST"])
 def addComment(post_id):
     post = Posts.query.get(post_id)
     if not post:
         return jsonify({"code": 404, "message": "Post not found."}), 404
 
     data = request.get_json()
+    user_id = data.get("user_id")
     comment_id = data.get("comment_id")
     content = data.get("content")
 
-    comment = Comments(post_id=post_id, comment_id=comment_id, content=content)
+    comment = Comments(
+        post_id=post_id, comment_id=comment_id, content=content, user_id=user_id
+    )
 
     try:
         db.session.add(comment)
@@ -256,7 +240,7 @@ def addComment(post_id):
         )
 
 
-@app.route("/getComments/<string:post_id>")
+@app.route("/api/v1/getComments/<string:post_id>")
 def getComments(post_id):
     comments = Comments.query.filter_by(post_id=post_id).all()
 
@@ -267,7 +251,7 @@ def getComments(post_id):
         return jsonify({"code": 404, "message": "No comments found for the post."}), 404
 
 
-@app.route("/updateComment/<string:comment_id>", methods=["PUT"])
+@app.route("/api/v1/updateComment/<string:comment_id>", methods=["PUT"])
 def updateComment(comment_id):
     comment = Comments.query.get(comment_id)
 
@@ -295,7 +279,7 @@ def updateComment(comment_id):
         )
 
 
-@app.route("/deleteComment/<string:comment_id>", methods=["DELETE"])
+@app.route("/api/v1/deleteComment/<string:comment_id>", methods=["DELETE"])
 def deleteComment(comment_id):
     comment = Comments.query.get(comment_id)
 
@@ -319,75 +303,6 @@ def deleteComment(comment_id):
             ),
             500,
         )
-
-
-# Create a new forum
-@app.route("/addForums", methods=["POST"])
-def create_forum():
-    data = request.get_json()
-    concert_id = data.get("concert_id")
-
-    new_forum = Forums(concert_id=concert_id)
-
-    try:
-        db.session.add(new_forum)
-        db.session.commit()
-        return jsonify({"code": 201, "data": new_forum.json()}), 201
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"code": 500, "message": f"An error occurred: {str(e)}"}), 500
-
-
-# Get all forums
-@app.route("/forums", methods=["GET"])
-def get_forums():
-    forums = Forums.query.all()
-    forum_list = [forum.json() for forum in forums]
-    return jsonify({"code": 200, "data": forum_list}), 200
-
-
-# Get a specific forum by concert_id
-@app.route("/forums/<string:concert_id>", methods=["GET"])
-def get_forum(concert_id):
-    forum = Forums.query.get(concert_id)
-    if forum:
-        return jsonify({"code": 200, "data": forum.json()}), 200
-    else:
-        return jsonify({"code": 404, "message": "Forum not found."}), 404
-
-
-# Update a forum by concert_id
-@app.route("/updateForums/<string:concert_id>", methods=["PUT"])
-def update_forum(concert_id):
-    forum = Forums.query.get(concert_id)
-    if not forum:
-        return jsonify({"code": 404, "message": "Forum not found."}), 404
-
-    data = request.get_json()
-    forum.concert_id = data.get("concert_id", forum.concert_id)
-
-    try:
-        db.session.commit()
-        return jsonify({"code": 200, "data": forum.json()}), 200
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"code": 500, "message": f"An error occurred: {str(e)}"}), 500
-
-
-# Delete a forum by concert_id
-@app.route("/deleteForums/<string:concert_id>", methods=["DELETE"])
-def delete_forum(concert_id):
-    forum = Forums.query.get(concert_id)
-    if not forum:
-        return jsonify({"code": 404, "message": "Forum not found."}), 404
-
-    try:
-        db.session.delete(forum)
-        db.session.commit()
-        return jsonify({"code": 200, "message": "Forum deleted successfully."}), 200
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"code": 500, "message": f"An error occurred: {str(e)}"}), 500
 
 
 if __name__ == "__main__":
