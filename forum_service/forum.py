@@ -37,6 +37,7 @@ class Posts(db.Model):
     def json(self):
         return {
             "post_id": self.post_id,
+            "concert_id": self.concert_id,
             "user_id": self.user_id,
             "title": self.title,
             "content": self.content,
@@ -45,8 +46,8 @@ class Posts(db.Model):
 
 class Comments(db.Model):
     __tablename__ = "comments"
-    comment_id = db.Column(db.Integer, primary_key=True)
-    post_id = db.Column(db.Integer, ForeignKey("posts.post_id"), nullable=False)
+    comment_id = db.Column(UUID(as_uuid=True), primary_key=True)
+    post_id = db.Column(UUID(as_uuid=True), ForeignKey("posts.post_id"), nullable=False)
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.now())
     edited_at = db.Column(db.DateTime, nullable=False, default=datetime.now())
@@ -72,9 +73,21 @@ def getPosts():
     return jsonify({"code": 404, "message": "There are no posts."}), 404
 
 
+@app.route("/api/v1/getPostsByUserId/<string:user_id>")
+def getPostsByUserId(user_id):
+    posts = db.session.scalars(db.select(Posts).filter_by(user_id=user_id)).all()
+    if len(posts):
+        return jsonify(
+            {
+                "code": 200,
+                "data": {"posts": [post.json() for post in posts]},
+            }
+        )
+    return jsonify({"code": 404, "message": "There are no posts."}), 404
+
+
 @app.route("/api/v1/getPost/<string:post_id>")
 def getPost(post_id):
-
     post = db.session.scalars(
         db.select(Posts).filter_by(post_id=post_id).limit(1)
     ).first()
