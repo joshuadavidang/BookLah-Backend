@@ -48,6 +48,7 @@ class Comments(db.Model):
     __tablename__ = "comments"
     comment_id = db.Column(UUID(as_uuid=True), primary_key=True)
     post_id = db.Column(UUID(as_uuid=True), ForeignKey("posts.post_id"), nullable=False)
+    user_id = db.Column(db.String(255), nullable=False)
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.now())
     edited_at = db.Column(db.DateTime, nullable=False, default=datetime.now())
@@ -57,6 +58,7 @@ class Comments(db.Model):
             "comment_id": self.comment_id,
             "post_id": self.post_id,
             "content": self.content,
+            "user_id": self.user_id,
         }
 
 
@@ -212,10 +214,13 @@ def addComment(post_id):
         return jsonify({"code": 404, "message": "Post not found."}), 404
 
     data = request.get_json()
+    user_id = data.get("user_id")
     comment_id = data.get("comment_id")
     content = data.get("content")
 
-    comment = Comments(post_id=post_id, comment_id=comment_id, content=content)
+    comment = Comments(
+        post_id=post_id, comment_id=comment_id, content=content, user_id=user_id
+    )
 
     try:
         db.session.add(comment)
