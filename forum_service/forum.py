@@ -6,6 +6,20 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 
 
+class Forums(db.Model):
+    __tablename__ = "forums"
+    concert_id = db.Column(db.String(255), primary_key=True)
+
+    posts = relationship("Posts", backref="forum_posts")
+
+    def __init__(self, concert_id):
+        self.concert_id = concert_id
+
+    def json(self):
+        return {
+            "concert_id": self.concert_id,
+        }
+
 class Posts(db.Model):
     __tablename__ = "posts"
     post_id = db.Column(UUID(as_uuid=True), primary_key=True)
@@ -303,6 +317,70 @@ def deleteComment(comment_id):
             ),
             500,
         )
+
+
+@app.route("/api/v1/addForum", methods=["POST"])
+def create_forum():
+    data = request.get_json()
+    concert_id = data.get("concert_id")
+
+    new_forum = Forums(concert_id=concert_id)
+
+    try:
+        db.session.add(new_forum)
+        db.session.commit()
+        return jsonify({"code": 201, "data": new_forum.json()}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"code": 500, "message": f"An error occurred: {str(e)}"}), 500
+
+
+@app.route("/api/v1/forums", methods=["GET"])
+def get_forums():
+    forums = Forums.query.all()
+    forum_list = [forum.json() for forum in forums]
+    return jsonify({"code": 200, "data": forum_list}), 200
+
+
+@app.route("/api/v1/getForum/<string:concert_id>", methods=["GET"])
+def get_forum(concert_id):
+    forum = Forums.query.get(concert_id)
+    if forum:
+        return jsonify({"code": 200, "data": forum.json()}), 200
+    else:
+        return jsonify({"code": 404, "message": "Forum not found."}), 404
+
+
+@app.route("/api/v1/updateForum/<string:concert_id>", methods=["PUT"])
+def update_forum(concert_id):
+    forum = Forums.query.get(concert_id)
+    if not forum:
+        return jsonify({"code": 404, "message": "Forum not found."}), 404
+
+    data = request.get_json()
+    forum.concert_id = data.get("concert_id", forum.concert_id)
+
+    try:
+        db.session.commit()
+        return jsonify({"code": 200, "data": forum.json()}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"code": 500, "message": f"An error occurred: {str(e)}"}), 500
+
+
+@app.route("/api/v1/deleteForum/<string:concert_id>", methods=["DELETE"])
+def delete_forum(concert_id):
+    forum = Forums.query.get(concert_id)
+    if not forum:
+        return jsonify({"code": 404, "message": "Forum not found."}), 404
+
+    try:
+        db.session.delete(forum)
+        db.session.commit()
+        return jsonify({"code": 200, "message": "Forum deleted successfully."}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"code": 500, "message": f"An error occurred: {str(e)}"}), 500
 
 
 if __name__ == "__main__":
