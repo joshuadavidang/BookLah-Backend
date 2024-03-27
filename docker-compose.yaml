@@ -247,4 +247,47 @@ services:
       - rabbitmq
       - auth_service
       - booking_service
+      - concert_service
       - notification_service
+
+  ####################################
+  ### Cancel Booking Complex Service ###
+  ####################################
+  cancel_booking_microservice:
+    build: ./cancel_booking_microservice
+    container_name: cancel_booking_microservice
+    restart: always
+    ports:
+      - 5200:5200
+    environment:
+      - EXCHANGE_NAME=${EXCHANGE_NAME}
+      - EXCHANGE_TYPE=${EXCHANGE_TYPE}
+      # - rabbit_host: rabbitmq
+      # - rabbit_port: 5672
+    depends_on:
+      - rabbitmq
+      - auth_service
+      - concert_service
+      - booking_service
+      - payment_service
+      - notification_service
+
+  ####################################
+  ### Forum Complex Service ###
+  ####################################
+  get_forum_microservice:
+    build: ./get_forum_microservice
+    container_name: get_forum_microservice
+    restart: always
+    ports:
+      - 5300:5300
+    environment:
+      - EXCHANGE_NAME=${EXCHANGE_NAME}
+      - EXCHANGE_TYPE=${EXCHANGE_TYPE}
+      # - rabbit_host: rabbitmq
+      # - rabbit_port: 5672
+    depends_on:
+      - rabbitmq
+      - auth_service
+      - forum_service
+      - booking_service
