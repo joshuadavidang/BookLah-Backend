@@ -90,7 +90,7 @@ services:
   #########################
   ### Postgres Database ###
   #########################
-  db:
+  Postgres_db:
     image: postgres:latest
     restart: always
     ports:
@@ -99,6 +99,48 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
+
+  #########################
+  ### Concert Database ###
+  #########################
+  Concert_db:
+    image: mysql:latest
+    restart: always
+    ports:
+      - 3306:3306
+    # environment:
+    #   - MYSQL_ROOT_PASSWORD: your_password
+    #   - MYSQL_DATABASE: database_name
+    #   - MYSQL_USER: user_name
+    #   - MYSQL_PASSWORD: user_password
+
+  #########################
+  ### Booking Database ###
+  #########################
+  Booking_db:
+    image: mysql:latest
+    restart: always
+    ports:
+      - 3307:3306
+    # environment:
+    #   - MYSQL_ROOT_PASSWORD: your_password
+    #   - MYSQL_DATABASE: database_name
+    #   - MYSQL_USER: user_name
+    #   - MYSQL_PASSWORD: user_password
+
+  #########################
+  ### Forum Database ###
+  #########################
+  Forum_db:
+    image: mysql:latest
+    restart: always
+    ports:
+      - 3308:3306
+    # environment:
+    #   - MYSQL_ROOT_PASSWORD: your_password
+    #   - MYSQL_DATABASE: database_name
+    #   - MYSQL_USER: user_name
+    #   - MYSQL_PASSWORD: user_password
 
   ################
   ### RabbitMQ ###
