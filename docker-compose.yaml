@@ -1,5 +1,6 @@
 volumes:
-  pgdata: 
+  pgdata:
+  rabbitmq_data:
 
 networks:
   kong-net:
@@ -24,7 +25,8 @@ services:
       POSTGRES_USER: kong
       POSTGRES_PASSWORD: password
     ports:
-      - "5432:5432"
+      - "5433:5432"
+      # - "5432:5432"
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "kong"]
       interval: 10s
@@ -37,8 +39,8 @@ services:
   # Kong database migration
   #######################################
   kong-migration:
-    image: kong/kong-gateway:3.2.2.5 # tested 20231101
-    platform: linux/amd64  # <- required for Mac M1 chip. Otherwise, can remove
+    image: kong/kong-gateway:3.2.2.5 
+    platform: linux/amd64  # <- required for Mac M1 chip. 
     command: "kong migrations bootstrap"
     restart: on-failure
     networks:
@@ -55,8 +57,8 @@ services:
   # Kong: The API Gateway
   #######################################
   kong:
-    image: kong/kong-gateway:3.2.2.5 # tested 20231101
-    platform: linux/amd64  # <- required for Mac M1 chip. Otherwise, can remove
+    image: kong/kong-gateway:3.2.2.5 
+    platform: linux/amd64  # <- required for Mac M1 chip. 
     restart: always
     networks:
       - kong-net
@@ -101,14 +103,25 @@ services:
   ################
   ### RabbitMQ ###
   ################
+  # rabbitmq:
+  #   image: rabbitmq:3-management
+  #   hostname: rabbitmq
+  #   container_name: rabbitmq
+  #   restart: always
+  #   ports:
+  #     - 5672:5672
+  #     - 15672:15672
+
   rabbitmq:
-    image: rabbitmq:3-management
+    image: rabbitmq
     hostname: rabbitmq
     container_name: rabbitmq
     restart: always
     ports:
-      - 5672:5672
-      - 15672:15672
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
 
   ###########################
   ### Simple Auth Service ###
@@ -149,7 +162,7 @@ services:
     environment:
       - DATABASE_URI=${BOOKING_SERVICE_DATABASE_URI}
     depends_on:
-      - rabbitmq
+      # - rabbitmq
       - auth_service
 
   ##############################
@@ -166,7 +179,7 @@ services:
       - STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
     depends_on:
-      - rabbitmq
+      # - rabbitmq
       - auth_service
 
   ###################################
@@ -180,6 +193,7 @@ services:
       - 5003:5003
     environment:
       - MAILTRAP_API_KEY=${MAILTRAP_API_KEY}
+      # rabbitMQ: "amqp://rabbitmq:5672"
     depends_on:
       - rabbitmq
       - auth_service
@@ -198,7 +212,7 @@ services:
       - STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
     depends_on:
-      - rabbitmq
+      # - rabbitmq
       - auth_service
 
   ############################
@@ -227,6 +241,8 @@ services:
     environment:
       - EXCHANGE_NAME=${EXCHANGE_NAME}
       - EXCHANGE_TYPE=${EXCHANGE_TYPE}
+      # - rabbit_host: rabbitmq
+      # - rabbit_port: 5672
     depends_on:
       - rabbitmq
       - auth_service
