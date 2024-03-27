@@ -100,11 +100,6 @@ def cancel_concert():
 
 def process_cancel_concert(booked_users_for_concert, concert_id):
     try:
-        # Perform necessary actions for canceling concert
-        # Example:
-        # 1. Notify ticket holders
-        # 2. Trigger refunds
-        # 3. Cancel event in the event microservice
 
         # Example of canceling event
         print("\n-----Canceling concert-----")
