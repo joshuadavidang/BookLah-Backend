@@ -2,7 +2,7 @@ import time
 import pika
 import uuid
 
-hostname = "localhost"
+hostname = "host.docker.internal"
 port = 5006
 
 
