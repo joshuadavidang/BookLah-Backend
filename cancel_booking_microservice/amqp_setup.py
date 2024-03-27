@@ -3,7 +3,7 @@ import pika
 from os import environ
 
 hostname = "host.docker.internal"
-port = 5006
+port = 5672
 exchangename = environ.get("EXCHANGE_NAME")
 exchangetype = environ.get("EXCHANGE_TYPE")
 
