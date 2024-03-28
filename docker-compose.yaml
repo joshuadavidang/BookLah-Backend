@@ -203,6 +203,8 @@ services:
       - 5001:5001
     environment:
       - DATABASE_URI=${BOOKING_SERVICE_DATABASE_URI}
+      - PYTHONUNBUFFERED=1
+
     depends_on:
       # - rabbitmq
       - auth_service
@@ -220,6 +222,8 @@ services:
       - DATABASE_URI=${CONCERT_SERVICE_DATABASE_URI}
       - STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - PYTHONUNBUFFERED=1
+      
     depends_on:
       # - rabbitmq
       - auth_service
@@ -236,6 +240,7 @@ services:
     environment:
       - MAILTRAP_API_KEY=${MAILTRAP_API_KEY}
       # rabbitMQ: "amqp://rabbitmq:5672"
+      - PYTHONUNBUFFERED=1
     depends_on:
       - rabbitmq
       - auth_service
@@ -253,6 +258,7 @@ services:
       - DATABASE_URI=${PAYMENT_SERVICE_DATABASE_URI}
       - STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - PYTHONUNBUFFERED=1
     depends_on:
       # - rabbitmq
       - auth_service
@@ -268,6 +274,7 @@ services:
       - 5007:5007
     environment:
       - DATABASE_URI=${FORUM_SERVICE_DATABASE_URI}
+      - PYTHONUNBUFFERED=1
     depends_on:
       - auth_service
 
@@ -283,6 +290,7 @@ services:
     environment:
       - EXCHANGE_NAME=${EXCHANGE_NAME}
       - EXCHANGE_TYPE=${EXCHANGE_TYPE}
+      - PYTHONUNBUFFERED=1
       # - rabbit_host: rabbitmq
       # - rabbit_port: 5672
     depends_on:
@@ -304,6 +312,7 @@ services:
     environment:
       - EXCHANGE_NAME=${EXCHANGE_NAME}
       - EXCHANGE_TYPE=${EXCHANGE_TYPE}
+      - PYTHONUNBUFFERED=1
       # - rabbit_host: rabbitmq
       # - rabbit_port: 5672
     depends_on:
@@ -326,6 +335,7 @@ services:
     environment:
       - EXCHANGE_NAME=${EXCHANGE_NAME}
       - EXCHANGE_TYPE=${EXCHANGE_TYPE}
+      - PYTHONUNBUFFERED=1
       # - rabbit_host: rabbitmq
       # - rabbit_port: 5672
     depends_on:
