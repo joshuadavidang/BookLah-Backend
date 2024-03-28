@@ -240,9 +240,11 @@ def addComment(post_id):
         )
 
 
-@app.route("/api/v1/getComments/<string:post_id>")
+@app.route("/api/v1/getComments/<uuid:post_id>")
 def getComments(post_id):
-    comments = Comments.query.filter_by(post_id=post_id).all()
+    comments = (
+        Comments.query.filter_by(post_id=post_id).order_by(Comments.created_at).all()
+    )
 
     if comments:
         comments_data = [comment.json() for comment in comments]
