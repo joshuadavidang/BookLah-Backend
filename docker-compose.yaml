@@ -145,25 +145,28 @@ services:
   ################
   ### RabbitMQ ###
   ################
-  # rabbitmq:
-  #   image: rabbitmq:3-management
-  #   hostname: rabbitmq
-  #   container_name: rabbitmq
-  #   restart: always
-  #   ports:
-  #     - 5672:5672
-  #     - 15672:15672
-
   rabbitmq:
-    image: rabbitmq
+    image: rabbitmq:3-management
     hostname: rabbitmq
-    container_name: rabbitmq
     restart: always
     ports:
       - "5672:5672"
       - "15672:15672"
-    volumes:
+    volumes: 
+      - ./rabbitmq.config:/etc/rabbitmq/rabbitmq.config
+      - ./rabbitmq_definitions.json:/etc/rabbitmq/rabbitmq_definitions.json
       - rabbitmq_data:/var/lib/rabbitmq
+   
+  # rabbitmq:
+  #   image: rabbitmq
+  #   hostname: rabbitmq
+  #   container_name: rabbitmq
+  #   restart: always
+  #   ports:
+  #     - "5672:5672"
+  #     - "15672:15672"
+  #   volumes:
+  #     - rabbitmq_data:/var/lib/rabbitmq
 
   ###########################
   ### Simple Auth Service ###
@@ -343,3 +346,33 @@ services:
       - auth_service
       - forum_service
       - booking_service
+
+  #########################################
+  ### Simple Activity Log Service ###
+  #########################################
+  activity_log:
+    build: ./activity_log_service
+    container_name: activity_log_service
+    restart: always
+    depends_on:
+      - rabbitmq
+    environment:
+      rabbit_host: rabbitmq
+      rabbit_port: 5672
+      a_queue_name: Activity_Log
+      PYTHONUNBUFFERED: 1
+
+  ###################################
+  ### Simple Error Service ###
+  ###################################
+  error:
+    build: ./error_service
+    container_name: error_service
+    restart: always
+    depends_on:
+      - rabbitmq
+    environment:
+      rabbit_host: rabbitmq
+      rabbit_port: 5672
+      e_queue_name: Error
+      PYTHONUNBUFFERED: 1
