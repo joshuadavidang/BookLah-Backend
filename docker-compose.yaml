@@ -354,7 +354,9 @@ services:
   ### Simple Activity Log Service ###
   #########################################
   activity_log:
-    build: ./activity_log_service
+    build: 
+      context: ./error_service
+      dockerfile: activity_log.Dockerfile
     container_name: activity_log_service
     restart: always
     depends_on:
@@ -369,7 +371,9 @@ services:
   ### Simple Error Service ###
   ###################################
   error:
-    build: ./error_service
+    build: 
+      context: ./error_service
+      dockerfile: error.Dockerfile
     container_name: error_service
     restart: always
     depends_on:
