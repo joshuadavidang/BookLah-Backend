@@ -209,7 +209,6 @@ services:
       - PYTHONUNBUFFERED=1
 
     depends_on:
-      # - rabbitmq
       - auth_service
 
   ##############################
@@ -228,7 +227,6 @@ services:
       - PYTHONUNBUFFERED=1
       
     depends_on:
-      # - rabbitmq
       - auth_service
 
   ###################################
@@ -263,7 +261,6 @@ services:
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
       - PYTHONUNBUFFERED=1
     depends_on:
-      # - rabbitmq
       - auth_service
 
   ############################
@@ -302,6 +299,8 @@ services:
       - booking_service
       - concert_service
       - notification_service
+      - activity_log
+      - error
 
   ####################################
   ### Cancel Booking Complex Service ###
@@ -325,6 +324,8 @@ services:
       - booking_service
       - payment_service
       - notification_service
+      - activity_log
+      - error
 
   ####################################
   ### Forum Complex Service ###
@@ -346,6 +347,8 @@ services:
       - auth_service
       - forum_service
       - booking_service
+      - activity_log
+      - error
 
   #########################################
   ### Simple Activity Log Service ###
