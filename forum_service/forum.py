@@ -9,21 +9,27 @@ from sqlalchemy.dialects.postgresql import UUID
 class Forums(db.Model):
     __tablename__ = "forums"
     concert_id = db.Column(db.String(255), primary_key=True)
+    concert_name = db.Column(db.String(255), nullable=False)
 
-    posts = relationship("Posts", backref="forum_posts")
+    posts = relationship("Posts", backref="forum")
 
-    def __init__(self, concert_id):
+    def __init__(self, concert_id, concert_name):
         self.concert_id = concert_id
+        self.concert_name = concert_name
 
     def json(self):
         return {
             "concert_id": self.concert_id,
+            "concert_name": self.concert_name,
         }
+
 
 class Posts(db.Model):
     __tablename__ = "posts"
     post_id = db.Column(UUID(as_uuid=True), primary_key=True)
-    concert_id = db.Column(db.String(255), nullable=False)
+    concert_id = db.Column(
+        db.String(255), db.ForeignKey("forums.concert_id"), nullable=False
+    )
     user_id = db.Column(db.String(255), nullable=False)
     title = db.Column(db.String(255), nullable=False)
     content = db.Column(db.Text, nullable=False)
@@ -89,9 +95,9 @@ def getPosts():
     return jsonify({"code": 404, "message": "There are no posts."}), 404
 
 
-@app.route("/api/v1/getPostsByUserId/<string:user_id>")
-def getPostsByUserId(user_id):
-    posts = db.session.scalars(db.select(Posts).filter_by(user_id=user_id)).all()
+@app.route("/api/v1/getPostsByConcertId/<string:concert_id>")
+def getPostsByUserId(concert_id):
+    posts = db.session.scalars(db.select(Posts).filter_by(concert_id=concert_id)).all()
     if len(posts):
         return jsonify(
             {
@@ -325,8 +331,9 @@ def deleteComment(comment_id):
 def create_forum():
     data = request.get_json()
     concert_id = data.get("concert_id")
+    concert_name = data.get("concert_name")
 
-    new_forum = Forums(concert_id=concert_id)
+    new_forum = Forums(concert_id=concert_id, concert_name=concert_name)
 
     try:
         db.session.add(new_forum)
@@ -337,7 +344,7 @@ def create_forum():
         return jsonify({"code": 500, "message": f"An error occurred: {str(e)}"}), 500
 
 
-@app.route("/api/v1/forums", methods=["GET"])
+@app.route("/api/v1/getForums", methods=["GET"])
 def get_forums():
     forums = Forums.query.all()
     forum_list = [forum.json() for forum in forums]
