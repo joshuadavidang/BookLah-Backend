@@ -1,12 +1,13 @@
 import time
 import pika
+import uuid
 
-hostname = "localhost"
+hostname = "host.docker.internal"
 port = 5006
 
 
 # function to create a connection to the broker
-def create_connection(max_retries=12, retry_interval=5):
+def create_connection(correlation_id=None, max_retries=12, retry_interval=5):
     print("amqp_connection: Create_connection")
 
     retries = 0
@@ -35,8 +36,11 @@ def create_connection(max_retries=12, retry_interval=5):
         raise Exception(
             "Unable to establish a connection to RabbitMQ after multiple attempts"
         )
-
-    return connection
+    
+    if correlation_id:
+        return connection, correlation_id
+    else: 
+        return connection
 
 
 # function to check if the exchange exists
@@ -50,4 +54,7 @@ def check_exchange(channel, exchangename, exchangetype):
 
 
 if __name__ == "__main__":
-    create_connection()
+    correlation_id=str(uuid.uuid4())
+    connection, correlation_id= create_connection(correlation_id=correlation_id)
+    print(f"Connection: {connection}")
+    print(f"Correlation ID: {correlation_id}")
