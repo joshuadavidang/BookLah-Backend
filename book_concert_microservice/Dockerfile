@@ -5,4 +5,5 @@ RUN python3 -m pip install --no-cache-dir -r requirements.txt
 COPY ./amqp_setup.py .
 COPY ./book_concert.py .
 COPY ./invokes.py .
-CMD [ "python3", "./amqp_setup.py", "./book_concert.py" ]
+RUN python3 amqp_setup.py
+CMD [ "python3",  "book_concert.py" ]
