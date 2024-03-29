@@ -36,10 +36,10 @@ def create_connection(correlation_id=None, max_retries=12, retry_interval=5):
         raise Exception(
             "Unable to establish a connection to RabbitMQ after multiple attempts"
         )
-    
+
     if correlation_id:
         return connection, correlation_id
-    else: 
+    else:
         return connection
 
 
@@ -54,7 +54,7 @@ def check_exchange(channel, exchangename, exchangetype):
 
 
 if __name__ == "__main__":
-    correlation_id=str(uuid.uuid4())
-    connection, correlation_id= create_connection(correlation_id=correlation_id)
+    correlation_id = str(uuid.uuid4())
+    connection, correlation_id = create_connection(correlation_id=correlation_id)
     print(f"Connection: {connection}")
     print(f"Correlation ID: {correlation_id}")

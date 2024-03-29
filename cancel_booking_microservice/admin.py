@@ -25,6 +25,7 @@ exchangetype = "topic"  # use a 'topic' exchange to enable interaction
 connection = amqp_connection.create_connection()
 channel = connection.channel()
 
+
 # if the exchange is not yet created, exit the program
 if not amqp_connection.check_exchange(channel, exchangename, exchangetype):
     print(
