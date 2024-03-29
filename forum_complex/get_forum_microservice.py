@@ -15,13 +15,13 @@ import pika
 import json
 import amqp_setup
 
-booking_URL = "http://localhost:5001/get_bookings"
-forum_URL = "http://localhost:5003/getPosts"
+booking_URL = "http://localhost:5001/api/v1/get_user_bookings/"
+forum_URL = "http://localhost:5007/api/v1/getForum/"
 
 
 # exchangename = environ.get("EXCHANGE_NAME")
 # exchangetype = environ.get("EXCHANGE_TYPE")
-exchangename = "booking_topic"
+exchangename = "forum_topic"
 exchangetype = "topic"
 connection = amqp_setup.create_connection()
 channel = connection.channel()
@@ -37,16 +37,19 @@ if not amqp_connection.check_exchange(channel, exchangename, exchangetype):
 def get_forum():
     # Simple check of input format and data of the request are JSON
     if request.is_json:
+
+        # userID = request.get_json()["user_id"]
         try:
             booking = request.get_json()
             print("\nReceived an order in JSON:", booking)
+            
 
             # do the actual work
             # 1. Get forum based on concert ID
             result = processGetForum(booking)
             print("\n------------------------")
             print("\nresult: ", result)
-            return jsonify(result), result["code"]
+            return result
 
         except Exception as e:
             # Unexpected error in code
@@ -63,15 +66,13 @@ def get_forum():
             )
             print(ex_str)
 
-            return (
-                jsonify(
+            return jsonify(
                     {
                         "code": 500,
                         "message": "forum_complex.py internal error: " + ex_str,
                     }
-                ),
-                500,
-            )
+                )
+            
 
     # if reached here, not a JSON request.
     return (
@@ -82,11 +83,14 @@ def get_forum():
     )
 
 
-def processGetForum(order):
+def processGetForum(booking):
     try:
         # Invoke booking microservice to get concert ID
-        print("\n-----Invoking booking microservice to get concert ID-----")
-        booking_result = invoke_http(booking_URL, method="POST", json=order)
+        print("\n-----Invoking booking microservice to get user ID-----")
+        user_id = booking["user_id"]
+        print(booking_URL + user_id)
+        booking_result = invoke_http(booking_URL + user_id, method="GET", json=booking)
+        print(booking)
         print("booking_result:", booking_result)
 
         # Check the booking result; if a failure, publish error to error microservice and return the error
@@ -101,25 +105,27 @@ def processGetForum(order):
                 properties=pika.BasicProperties(delivery_mode=2),
             )
             # Return error message
-            return (
-                jsonify(
+            return jsonify(
                     {
                         "code": 500,
                         "message": "Booking microservice failed to retrieve concert ID.",
                     }
                 ),
-                500,
+        else:
+            print(
+                "\n\n-----Publishing the (booking info) message with routing_key=forum.info-----"
             )
-
-        # Extract concert ID from booking result
-        concert_id = booking_result["data"]["concert_id"]
-
+            channel.basic_publish(
+                exchange=exchangename, routing_key="forum.info", body="Bookings obtained succesfully"
+            )
+            
+    
         # Invoke forum microservice to get forum based on concert ID
         print("\n-----Invoking forum microservice to get forum-----")
         forum_result = invoke_http(
-            forum_URL, method="POST", json={"concert_id": concert_id}
+            forum_URL + user_id, method="GET"
         )
-        print("forum_result:", forum_result)
+        print("forum_result", forum_result)
 
         # Check the forum result; if a failure, publish error to error microservice and return the error
         forum_code = forum_result["code"]
@@ -144,7 +150,15 @@ def processGetForum(order):
             )
 
         # Return forum result
-        return jsonify(forum_result), forum_result["code"]
+        else:
+            print(
+                "\n\n-----Publishing the (booking info) message with routing_key=forum.info-----"
+            )
+            channel.basic_publish(
+                exchange=exchangename, routing_key="forum.info", body="forums obtained successfully"
+            )
+
+        return forum_result
 
     except Exception as e:
         # Unexpected error in code

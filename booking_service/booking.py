@@ -1,5 +1,6 @@
-from flask import request, jsonify
+from flask import Flask,request, jsonify
 from flask_sqlalchemy import SQLAlchemy
+
 import uuid
 import os
 
@@ -93,6 +94,21 @@ def create_booking():
             ),
             500,
         )
+    
+#get bookings by userid
+@app.route("/api/v1/get_user_bookings/<string:user_id>", methods=["GET"])
+def get_bookings_by_user(user_id):
+    print(user_id)
+    booking_list = Booking.query.filter_by(user_id=user_id).all()
+    if len(booking_list) > 0:
+        return jsonify(
+            {
+                "code": 200,
+                "data": {"bookings": [booking.json() for booking in booking_list]},
+            }
+        )
+    return jsonify({"code": 404, "message": f"No bookings found for user ID: {user_id}"})
+
 
 
 if __name__ == "__main__":

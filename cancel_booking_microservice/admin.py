@@ -19,7 +19,7 @@ error_URL = "http://localhost:5005/api/v1/error"
 payment_URL= "http://localhost:5006/api/v1/refund/"
 
 
-exchangename = "booking_topic" # exchange name
+exchangename = "cancel_topic" # exchange name
 exchangetype="topic" # use a 'topic' exchange to enable interaction
 connection = amqp_connection.create_connection() 
 channel = connection.channel()

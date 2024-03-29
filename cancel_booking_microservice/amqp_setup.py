@@ -26,6 +26,8 @@ def create_connection(max_retries=12, retry_interval=5):
                     blocked_connection_timeout=3600,
                 )
             )
+            channel=connection.channel()
+            channel.exchange_declare(exchange=exchangename, exchange_type=exchangetype, durable=True)
             print("amqp_setup: Connection established successfully")
             break
         except pika.exceptions.AMQPConnectionError as e:
@@ -77,7 +79,7 @@ def create_error_queue(channel):
     channel.queue_bind(exchange=exchangename, queue=e_queue_name, routing_key="*.error")
 
 
-if __name__ == "__main__":
-    connection = create_connection()
-    channel = create_channel(connection)
-    create_queues(channel)
+# if __name__ == "__main__":
+#     connection = create_connection()
+#     channel = create_channel(connection)
+#     create_queues(channel)

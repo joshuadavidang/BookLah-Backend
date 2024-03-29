@@ -1,4 +1,4 @@
-import amqp_connection
+import amqp_setup
 import json
 import pika
 
@@ -33,7 +33,7 @@ def processError(errorMsg):
 
 if __name__ == "__main__": 
     print("error microservice: Getting Connection")
-    connection = amqp_connection.create_connection() 
+    connection = amqp_setup.create_connection() 
     print("error microservice: Connection established successfully")
     channel = connection.channel()
     receiveError(channel)
