@@ -1,5 +1,6 @@
 import time
 import pika
+import uuid
 from os import environ
 
 hostname = "host.docker.internal"
@@ -8,16 +9,15 @@ exchangename = environ.get("EXCHANGE_NAME")
 exchangetype = environ.get("EXCHANGE_TYPE")
 
 
-# to create a connection to the broker
-def create_connection(max_retries=12, retry_interval=5):
-    print("amqp_setup:create_connection")
+def create_connection(correlation_id=None, max_retries=12, retry_interval=5):
+    print("amqp_connection: Create_connection")
 
     retries = 0
     connection = None
 
     while retries < max_retries:
         try:
-            print("amqp_setup: Trying connection")
+            print("amqp_connection: Trying connection")
             connection = pika.BlockingConnection(
                 pika.ConnectionParameters(
                     host=hostname,
@@ -26,20 +26,23 @@ def create_connection(max_retries=12, retry_interval=5):
                     blocked_connection_timeout=3600,
                 )
             )
-            print("amqp_setup: Connection established successfully")
+            print("amqp_connection: Connection established successfully")
             break
         except pika.exceptions.AMQPConnectionError as e:
-            print(f"amqp_setup: Failed to connect: {e}")
+            print(f"amqp_connection: Failed to connect: {e}")
             retries += 1
-            print(f"amqp_setup: Retrying in {retry_interval} seconds...")
+            print(f"amqp_connection: Retrying in {retry_interval} seconds...")
             time.sleep(retry_interval)
 
     if connection is None:
         raise Exception(
-            "amqp_setup: Unable to establish a connection to RabbitMQ after multiple attempts."
+            "Unable to establish a connection to RabbitMQ after multiple attempts"
         )
 
-    return connection
+    if correlation_id:
+        return connection, correlation_id
+    else:
+        return connection
 
 
 def create_channel(connection):
@@ -77,7 +80,21 @@ def create_error_queue(channel):
     channel.queue_bind(exchange=exchangename, queue=e_queue_name, routing_key="*.error")
 
 
+# function to check if the exchange exists
+def check_exchange(channel, exchangename, exchangetype):
+    try:
+        channel.exchange_declare(exchangename, exchangetype, durable=True, passive=True)
+    except Exception as e:
+        print("Exception:", e)
+        return False
+    return True
+
+
 if __name__ == "__main__":
     connection = create_connection()
     channel = create_channel(connection)
     create_queues(channel)
+    correlation_id = str(uuid.uuid4())
+    connection, correlation_id = create_connection(correlation_id=correlation_id)
+    print(f"Connection: {connection}")
+    print(f"Correlation ID: {correlation_id}")

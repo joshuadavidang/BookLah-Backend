@@ -6,7 +6,7 @@ from invokes import invoke_http
 
 import pika
 import json
-import amqp_connection
+import amqp_setup
 
 app = Flask(__name__)
 CORS(app)
@@ -22,12 +22,12 @@ payment_URL = "http://localhost:5006/api/v1/refund_payment"
 exchangename = "order_topic"  # exchange name
 exchangetype = "topic"  # use a 'topic' exchange to enable interaction
 
-connection = amqp_connection.create_connection()
+connection = amqp_setup.create_connection()
 channel = connection.channel()
 
 
 # if the exchange is not yet created, exit the program
-if not amqp_connection.check_exchange(channel, exchangename, exchangetype):
+if not amqp_setup.check_exchange(channel, exchangename, exchangetype):
     print(
         "\nCreate the 'Exchange' before running this microservice. \nExiting the program."
     )
