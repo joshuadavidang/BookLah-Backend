@@ -10,13 +10,12 @@ networks:
 version: "3.8"
 
 services:
-
   #######################################
   # Postgres: The database used by Kong
   #######################################
   kong-database:
     image: postgres:15 # tested 20231101; Ref: https://docs.konghq.com/gateway/latest/support/third-party/
-    platform: linux/amd64  # <- required for Mac M1 chip. Otherwise, can remove
+    platform: linux/amd64 # <- required for Mac M1 chip. Otherwise, can remove
     restart: always
     networks:
       - kong-net
@@ -39,8 +38,8 @@ services:
   # Kong database migration
   #######################################
   kong-migration:
-    image: kong/kong-gateway:3.2.2.5 
-    platform: linux/amd64  # <- required for Mac M1 chip. 
+    image: kong/kong-gateway:3.2.2.5
+    platform: linux/amd64 # <- required for Mac M1 chip.
     command: "kong migrations bootstrap"
     restart: on-failure
     networks:
@@ -57,8 +56,8 @@ services:
   # Kong: The API Gateway
   #######################################
   kong:
-    image: kong/kong-gateway:3.2.2.5 
-    platform: linux/amd64  # <- required for Mac M1 chip. 
+    image: kong/kong-gateway:3.2.2.5
+    platform: linux/amd64 # <- required for Mac M1 chip.
     restart: always
     networks:
       - kong-net
@@ -152,11 +151,11 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
-    volumes: 
+    volumes:
       - ./rabbitmq.config:/etc/rabbitmq/rabbitmq.config
       - ./rabbitmq_definitions.json:/etc/rabbitmq/rabbitmq_definitions.json
       - rabbitmq_data:/var/lib/rabbitmq
-   
+
   # rabbitmq:
   #   image: rabbitmq
   #   hostname: rabbitmq
@@ -184,7 +183,7 @@ services:
       - REDIRECT_URL=${REDIRECT_URL}
       - SGID_CLIENT_ID=${SGID_CLIENT_ID}
       - SGID_CLIENT_SECRET=${SGID_CLIENT_SECRET}
-      - SGID_PRIVATE_KEY:${SGID_PRIVATE_KEY}
+      - SGID_PRIVATE_KEY=${SGID_PRIVATE_KEY}
       - TYPE=${TYPE}
       - HOST=${HOST}
       - DB_PORT=${DB_PORT}
@@ -225,7 +224,6 @@ services:
       - STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
       - PYTHONUNBUFFERED=1
-      
     depends_on:
       - auth_service
 
@@ -354,7 +352,7 @@ services:
   ### Simple Activity Log Service ###
   #########################################
   activity_log:
-    build: 
+    build:
       context: ./error_service
       dockerfile: activity_log.Dockerfile
     container_name: activity_log_service
@@ -371,7 +369,7 @@ services:
   ### Simple Error Service ###
   ###################################
   error:
-    build: 
+    build:
       context: ./error_service
       dockerfile: error.Dockerfile
     container_name: error_service

@@ -6,10 +6,30 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 
 
+class Forums(db.Model):
+    __tablename__ = "forums"
+    concert_id = db.Column(db.String(255), primary_key=True)
+    concert_name = db.Column(db.String(255), nullable=False)
+
+    posts = relationship("Posts", backref="forum")
+
+    def __init__(self, concert_id, concert_name):
+        self.concert_id = concert_id
+        self.concert_name = concert_name
+
+    def json(self):
+        return {
+            "concert_id": self.concert_id,
+            "concert_name": self.concert_name,
+        }
+
+
 class Posts(db.Model):
     __tablename__ = "posts"
     post_id = db.Column(UUID(as_uuid=True), primary_key=True)
-    concert_id = db.Column(db.String(255), nullable=False)
+    concert_id = db.Column(
+        db.String(255), db.ForeignKey("forums.concert_id"), nullable=False
+    )
     user_id = db.Column(db.String(255), nullable=False)
     title = db.Column(db.String(255), nullable=False)
     content = db.Column(db.Text, nullable=False)
@@ -75,9 +95,9 @@ def getPosts():
     return jsonify({"code": 404, "message": "There are no posts."}), 404
 
 
-@app.route("/api/v1/getPostsByUserId/<string:user_id>")
-def getPostsByUserId(user_id):
-    posts = db.session.scalars(db.select(Posts).filter_by(user_id=user_id)).all()
+@app.route("/api/v1/getPostsByConcertId/<string:concert_id>")
+def getPostsByUserId(concert_id):
+    posts = db.session.scalars(db.select(Posts).filter_by(concert_id=concert_id)).all()
     if len(posts):
         return jsonify(
             {
@@ -240,9 +260,11 @@ def addComment(post_id):
         )
 
 
-@app.route("/api/v1/getComments/<string:post_id>")
+@app.route("/api/v1/getComments/<uuid:post_id>")
 def getComments(post_id):
-    comments = Comments.query.filter_by(post_id=post_id).all()
+    comments = (
+        Comments.query.filter_by(post_id=post_id).order_by(Comments.created_at).all()
+    )
 
     if comments:
         comments_data = [comment.json() for comment in comments]
@@ -303,6 +325,71 @@ def deleteComment(comment_id):
             ),
             500,
         )
+
+
+@app.route("/api/v1/addForum", methods=["POST"])
+def create_forum():
+    data = request.get_json()
+    concert_id = data.get("concert_id")
+    concert_name = data.get("concert_name")
+
+    new_forum = Forums(concert_id=concert_id, concert_name=concert_name)
+
+    try:
+        db.session.add(new_forum)
+        db.session.commit()
+        return jsonify({"code": 201, "data": new_forum.json()}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"code": 500, "message": f"An error occurred: {str(e)}"}), 500
+
+
+@app.route("/api/v1/getForums", methods=["GET"])
+def get_forums():
+    forums = Forums.query.all()
+    forum_list = [forum.json() for forum in forums]
+    return jsonify({"code": 200, "data": forum_list}), 200
+
+
+@app.route("/api/v1/getForum/<string:concert_id>", methods=["GET"])
+def get_forum(concert_id):
+    forum = Forums.query.get(concert_id)
+    if forum:
+        return jsonify({"code": 200, "data": forum.json()}), 200
+    else:
+        return jsonify({"code": 404, "message": "Forum not found."}), 404
+
+
+@app.route("/api/v1/updateForum/<string:concert_id>", methods=["PUT"])
+def update_forum(concert_id):
+    forum = Forums.query.get(concert_id)
+    if not forum:
+        return jsonify({"code": 404, "message": "Forum not found."}), 404
+
+    data = request.get_json()
+    forum.concert_id = data.get("concert_id", forum.concert_id)
+
+    try:
+        db.session.commit()
+        return jsonify({"code": 200, "data": forum.json()}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"code": 500, "message": f"An error occurred: {str(e)}"}), 500
+
+
+@app.route("/api/v1/deleteForum/<string:concert_id>", methods=["DELETE"])
+def delete_forum(concert_id):
+    forum = Forums.query.get(concert_id)
+    if not forum:
+        return jsonify({"code": 404, "message": "Forum not found."}), 404
+
+    try:
+        db.session.delete(forum)
+        db.session.commit()
+        return jsonify({"code": 200, "message": "Forum deleted successfully."}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"code": 500, "message": f"An error occurred: {str(e)}"}), 500
 
 
 if __name__ == "__main__":
