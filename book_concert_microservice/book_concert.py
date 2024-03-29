@@ -9,7 +9,7 @@ load_dotenv()
 
 import pika
 import json
-import amqp_setup
+import error_service.amqp_setup as amqp_setup
 
 app = Flask(__name__)
 CORS(app)
