@@ -332,8 +332,8 @@ services:
   ### Forum Complex Service ###
   ####################################
   get_forum_microservice:
-    build: ./get_forum_microservice
-    container_name: get_forum_microservice
+    build: ./forum_complex
+    container_name: forum_complex
     restart: always
     ports:
       - 5300:5300
