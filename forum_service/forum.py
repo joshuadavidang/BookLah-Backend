@@ -110,13 +110,27 @@ def getPostsByUserId(concert_id):
 
 @app.route("/api/v1/getPost/<string:post_id>")
 def getPost(post_id):
-    post = db.session.scalars(
-        db.select(Posts).filter_by(post_id=post_id).limit(1)
-    ).first()
+    post = db.session.query(Posts).filter_by(post_id=post_id).first()
 
     if post:
+        post.views += 1
+        try:
+            db.session.commit()
+        except:
+            db.session.rollback()
+            return (
+                jsonify(
+                    {
+                        "code": 500,
+                        "message": "An error occurred while updating views count.",
+                    }
+                ),
+                500,
+            )
+
         return jsonify({"code": 200, "data": post.json()})
-    return jsonify({"code": 404, "message": "post not found."}), 404
+    else:
+        return jsonify({"code": 404, "message": "Post not found."}), 404
 
 
 @app.route("/api/v1/addPost/<string:post_id>", methods=["POST"])
