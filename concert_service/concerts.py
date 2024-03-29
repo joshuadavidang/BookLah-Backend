@@ -76,6 +76,31 @@ class Concert(db.Model):
             "description": self.description,
             "created_by": self.created_by,
         }
+    
+class Seats(db.Model):
+        __tablename__ = "seats"
+
+        concert_id = db.Column(db.Integer, nullable=False)
+        category = db.Column(db.Integer, nullable=False)
+        seat_number = db.Column(db.Integer, nullable=False)
+        taken = db.Column(db.Boolean, nullable=False)
+
+
+        def __init__(self, concert_id, category, seat_number, taken):
+            self.concert_id = concert_id
+            self.category = category
+            self.seat_number = seat_number
+            self.taken = taken
+
+
+        def json(self):
+            return {
+                "concert_id": self.concert_id,
+                "category": self.category,
+                "seat_number": self.seat_number,
+                "taken": self.taken,
+        }
+
 
 
 @app.route("/api/v1/getConcerts")
