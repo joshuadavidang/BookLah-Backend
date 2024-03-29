@@ -68,6 +68,22 @@ def find_booking_by_id(booking_id):
     )
 
 
+@app.route("/api/v1/get_user_bookings/<string:user_id>", methods=["GET"])
+def get_bookings_by_user(user_id):
+    booking_list = Booking.query.filter_by(user_id=user_id).all()
+    if len(booking_list) > 0:
+        return jsonify(
+            {
+                "code": 200,
+                "data": {"bookings": [booking.json() for booking in booking_list]},
+            }
+        )
+    return (
+        jsonify({"code": 404, "message": f"No bookings found for user ID: {user_id}"}),
+        404,
+    )
+
+
 @app.route("/api/v1/create_booking", methods=["POST"])
 def create_booking():
     data = request.json
