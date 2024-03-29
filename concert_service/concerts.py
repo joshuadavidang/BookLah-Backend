@@ -3,7 +3,6 @@ from dbConfig import app, db, PORT
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import Enum
 from datetime import datetime
-import stripe
 
 ######## 8 ENDPOINTS ########
 

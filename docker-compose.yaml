@@ -181,7 +181,7 @@ services:
       - REDIRECT_URL=${REDIRECT_URL}
       - SGID_CLIENT_ID=${SGID_CLIENT_ID}
       - SGID_CLIENT_SECRET=${SGID_CLIENT_SECRET}
-      - SGID_PRIVATE_KEY:${SGID_PRIVATE_KEY}
+      - SGID_PRIVATE_KEY=${SGID_PRIVATE_KEY}
       - TYPE=${TYPE}
       - HOST=${HOST}
       - DB_PORT=${DB_PORT}
@@ -218,8 +218,6 @@ services:
       - 5002:5002
     environment:
       - DATABASE_URI=${CONCERT_SERVICE_DATABASE_URI}
-      - STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY}
-      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
     depends_on:
       # - rabbitmq
       - auth_service
