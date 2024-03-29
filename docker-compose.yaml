@@ -92,12 +92,108 @@ services:
   Postgres_db:
     image: postgres:latest
     restart: always
-    ports:
-      - 5432:5432
+    networks:
+      - kong-net
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
+      POSTGRES_DB: kong
+      POSTGRES_USER: kong
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5433:5432"
+      # - "5432:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "kong"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  #######################################
+  # Kong database migration
+  #######################################
+  kong-migration:
+    image: kong/kong-gateway:3.2.2.5
+    platform: linux/amd64 # <- required for Mac M1 chip.
+    command: "kong migrations bootstrap"
+    restart: on-failure
+    networks:
+      - kong-net
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: kong-database
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: password
+    depends_on:
+      - kong-database
+
+  #########################
+  ### Concert Database ###
+  #########################
+  concert_db:
+    image: mysql:latest
+    restart: always
+    ports:
+      - 3306:3306
+    # environment:
+    #   - MYSQL_ROOT_PASSWORD: your_password
+    #   - MYSQL_DATABASE: database_name
+    #   - MYSQL_USER: user_name
+    #   - MYSQL_PASSWORD: user_password
+
+  #########################
+  ### Booking Database ###
+  #########################
+  booking_db:
+    image: mysql:latest
+    restart: always
+    ports:
+      - 3307:3306
+    # environment:
+    #   - MYSQL_ROOT_PASSWORD: your_password
+    #   - MYSQL_DATABASE: database_name
+    #   - MYSQL_USER: user_name
+    #   - MYSQL_PASSWORD: user_password
+
+  #########################
+  ### Forum Database ###
+  #########################
+  forum_db:
+    image: mysql:latest
+    restart: always
+    ports:
+      - 3308:3306
+    # environment:
+    #   - MYSQL_ROOT_PASSWORD: your_password
+    #   - MYSQL_DATABASE: database_name
+    #   - MYSQL_USER: user_name
+    #   - MYSQL_PASSWORD: user_password
+
+  ################
+  ### RabbitMQ ###
+  ################
+  rabbitmq:
+    image: rabbitmq:3-management
+    hostname: rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - ./rabbitmq.config:/etc/rabbitmq/rabbitmq.config
+      - ./rabbitmq_definitions.json:/etc/rabbitmq/rabbitmq_definitions.json
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  # rabbitmq:
+  #   image: rabbitmq
+  #   hostname: rabbitmq
+  #   container_name: rabbitmq
+  #   restart: always
+  #   ports:
+  #     - "5672:5672"
+  #     - "15672:15672"
+  #   volumes:
+  #     - rabbitmq_data:/var/lib/rabbitmq
 
   #########################
   ### Concert Database ###
@@ -191,24 +287,22 @@ services:
       - 5001:5001
     environment:
       - DATABASE_URI=${BOOKING_SERVICE_DATABASE_URI}
+      - PYTHONUNBUFFERED=1
+
     depends_on:
       # - rabbitmq
       - auth_service
+      - booking_db
 
-  ##############################
-  ### Simple Concert Service ###
-  ##############################
-  concert_service:
-    build: ./concert_service
-    container_name: concert_service
-    restart: always
-    ports:
-      - 5002:5002
+  payment_db:
+    image: mysql:latest
+    command: mysqld --port=8890
     environment:
       - DATABASE_URI=${CONCERT_SERVICE_DATABASE_URI}
     depends_on:
       # - rabbitmq
       - auth_service
+      - concert_db
 
   ###################################
   ### Simple Notification Service ###
@@ -239,6 +333,30 @@ services:
       - DATABASE_URI=${PAYMENT_SERVICE_DATABASE_URI}
       - STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - payment_db
+
+    # environment:
+    #   - DATABASE_URI=${PAYMENT_SERVICE_DATABASE_URI}
+    #   - STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY}
+    #   - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+    #   - PYTHONUNBUFFERED=1
+    # depends_on:
+    #   - auth_service
+
+  ############################
+  ### Simple Forum Service ###
+  ############################
+  forum_service:
+    build: ./forum_service
+    container_name: forum_service
+    restart: always
+    ports:
+      - 5007:5007
+    environment:
+      - DATABASE_URI=${FORUM_SERVICE_DATABASE_URI}
+      - PYTHONUNBUFFERED=1
     depends_on:
       # - rabbitmq
       - auth_service
