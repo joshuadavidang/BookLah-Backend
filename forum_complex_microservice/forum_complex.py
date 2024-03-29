@@ -4,7 +4,7 @@ import os, sys
 from os import environ
 from dotenv import load_dotenv
 from invokes import invoke_http
-import amqp_connection
+import amqp_setup
 
 app = Flask(__name__)
 CORS(app)
@@ -26,7 +26,7 @@ exchangetype = "topic"
 connection = amqp_setup.create_connection()
 channel = connection.channel()
 
-if not amqp_connection.check_exchange(channel, exchangename, exchangetype):
+if not amqp_setup.check_exchange(channel, exchangename, exchangetype):
     print(
         "\nCreate the 'Exchange' before running this microservice. \nExiting the program."
     )
