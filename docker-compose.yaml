@@ -1,11 +1,11 @@
-volumes:
-  pgdata:
-  rabbitmq_data:
+# volumes:
+#   pgdata:
+#   rabbitmq_data:
 
-networks:
-  kong-net:
-    driver: bridge
-    name: kong-net
+# networks:
+#   kong-net:
+#     driver: bridge
+#     name: kong-net
 
 version: "3.8"
 
@@ -13,78 +13,78 @@ services:
   #######################################
   # Postgres: The database used by Kong
   #######################################
-  kong-database:
-    image: postgres:15 # tested 20231101; Ref: https://docs.konghq.com/gateway/latest/support/third-party/
-    platform: linux/amd64 # <- required for Mac M1 chip. Otherwise, can remove
-    restart: always
-    networks:
-      - kong-net
-    environment:
-      POSTGRES_DB: kong
-      POSTGRES_USER: kong
-      POSTGRES_PASSWORD: password
-    ports:
-      - "5433:5432"
-      # - "5432:5432"
-    healthcheck:
-      test: ["CMD", "pg_isready", "-U", "kong"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+  # kong-database:
+  #   image: postgres:15 # tested 20231101; Ref: https://docs.konghq.com/gateway/latest/support/third-party/
+  #   platform: linux/amd64 # <- required for Mac M1 chip. Otherwise, can remove
+  #   restart: always
+  #   networks:
+  #     - kong-net
+  #   environment:
+  #     POSTGRES_DB: kong
+  #     POSTGRES_USER: kong
+  #     POSTGRES_PASSWORD: password
+  #   ports:
+  #     - "5433:5432"
+  #     # - "5432:5432"
+  #   healthcheck:
+  #     test: ["CMD", "pg_isready", "-U", "kong"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   volumes:
+  #     - pgdata:/var/lib/postgresql/data
 
-  #######################################
-  # Kong database migration
-  #######################################
-  kong-migration:
-    image: kong/kong-gateway:3.2.2.5
-    platform: linux/amd64 # <- required for Mac M1 chip.
-    command: "kong migrations bootstrap"
-    restart: on-failure
-    networks:
-      - kong-net
-    environment:
-      KONG_DATABASE: postgres
-      KONG_PG_HOST: kong-database
-      KONG_PG_USER: kong
-      KONG_PG_PASSWORD: password
-    depends_on:
-      - kong-database
+  # #######################################
+  # # Kong database migration
+  # #######################################
+  # kong-migration:
+  #   image: kong/kong-gateway:3.2.2.5
+  #   platform: linux/amd64 # <- required for Mac M1 chip.
+  #   command: "kong migrations bootstrap"
+  #   restart: on-failure
+  #   networks:
+  #     - kong-net
+  #   environment:
+  #     KONG_DATABASE: postgres
+  #     KONG_PG_HOST: kong-database
+  #     KONG_PG_USER: kong
+  #     KONG_PG_PASSWORD: password
+  #   depends_on:
+  #     - kong-database
 
-  #######################################
-  # Kong: The API Gateway
-  #######################################
-  kong:
-    image: kong/kong-gateway:3.2.2.5
-    platform: linux/amd64 # <- required for Mac M1 chip.
-    restart: always
-    networks:
-      - kong-net
-    environment:
-      KONG_DATABASE: postgres
-      KONG_PG_HOST: kong-database
-      KONG_PG_USER: kong
-      KONG_PG_PASSWORD: password
-      KONG_PROXY_ACCESS_LOG: /dev/stdout
-      KONG_ADMIN_ACCESS_LOG: /dev/stdout
-      KONG_PROXY_ERROR_LOG: /dev/stderr
-      KONG_ADMIN_ERROR_LOG: /dev/stderr
-      KONG_ADMIN_LISTEN: 0.0.0.0:8001
-      KONG_ADMIN_GUI_URL: http://localhost:8002
-    depends_on:
-      - kong-migration
-    ports: # https://docs.konghq.com/gateway/latest/production/networking/default-ports/
-      - "8000:8000" # Takes incoming HTTP traffic from Consumers, and forwards it to upstream Services.
-      - "8443:8443" # Takes incoming HTTPS traffic from Consumers, and forwards it to upstream Services.
-      - "8001:8001" # Admin API. Listens for calls from the command line over HTTP.
-      - "8444:8444" # Admin API. Listens for calls from the command line over HTTPS.
-      - "8002:8002" # Kong Manager (GUI). Listens for HTTP traffic.
-      - "8445:8445" # Kong Manager (GUI). Listens for HTTPS traffic.
-      - "8003:8003" # Dev Portal. Listens for HTTP traffic, assuming Dev Portal is enabled.
-      - "8446:8446" # Dev Portal. Listens for HTTP traffic, assuming Dev Portal is enabled.
-      - "8004:8004" # Dev Portal /files traffic over HTTPS, assuming the Dev Portal is enabled.
-      - "8447:8447" # Dev Portal /files traffic over HTTPS, assuming the Dev Portal is enabled.
+  # #######################################
+  # # Kong: The API Gateway
+  # #######################################
+  # kong:
+  #   image: kong/kong-gateway:3.2.2.5
+  #   platform: linux/amd64 # <- required for Mac M1 chip.
+  #   restart: always
+  #   networks:
+  #     - kong-net
+  #   environment:
+  #     KONG_DATABASE: postgres
+  #     KONG_PG_HOST: kong-database
+  #     KONG_PG_USER: kong
+  #     KONG_PG_PASSWORD: password
+  #     KONG_PROXY_ACCESS_LOG: /dev/stdout
+  #     KONG_ADMIN_ACCESS_LOG: /dev/stdout
+  #     KONG_PROXY_ERROR_LOG: /dev/stderr
+  #     KONG_ADMIN_ERROR_LOG: /dev/stderr
+  #     KONG_ADMIN_LISTEN: 0.0.0.0:8001
+  #     KONG_ADMIN_GUI_URL: http://localhost:8002
+  #   depends_on:
+  #     - kong-migration
+  #   ports: # https://docs.konghq.com/gateway/latest/production/networking/default-ports/
+  #     - "8000:8000" # Takes incoming HTTP traffic from Consumers, and forwards it to upstream Services.
+  #     - "8443:8443" # Takes incoming HTTPS traffic from Consumers, and forwards it to upstream Services.
+  #     - "8001:8001" # Admin API. Listens for calls from the command line over HTTP.
+  #     - "8444:8444" # Admin API. Listens for calls from the command line over HTTPS.
+  #     - "8002:8002" # Kong Manager (GUI). Listens for HTTP traffic.
+  #     - "8445:8445" # Kong Manager (GUI). Listens for HTTPS traffic.
+  #     - "8003:8003" # Dev Portal. Listens for HTTP traffic, assuming Dev Portal is enabled.
+  #     - "8446:8446" # Dev Portal. Listens for HTTP traffic, assuming Dev Portal is enabled.
+  #     - "8004:8004" # Dev Portal /files traffic over HTTPS, assuming the Dev Portal is enabled.
+  #     - "8447:8447" # Dev Portal /files traffic over HTTPS, assuming the Dev Portal is enabled.
 
   #########################
   ### Postgres Database ###
@@ -102,44 +102,44 @@ services:
   #########################
   ### Concert Database ###
   #########################
-  Concert_db:
-    image: mysql:latest
-    restart: always
-    ports:
-      - 3306:3306
-    # environment:
-    #   - MYSQL_ROOT_PASSWORD: your_password
-    #   - MYSQL_DATABASE: database_name
-    #   - MYSQL_USER: user_name
-    #   - MYSQL_PASSWORD: user_password
+  # Concert_db:
+  #   image: mysql:latest
+  #   restart: always
+  #   ports:
+  #     - 3306:3306
+  # environment:
+  #   - MYSQL_ROOT_PASSWORD: your_password
+  #   - MYSQL_DATABASE: database_name
+  #   - MYSQL_USER: user_name
+  #   - MYSQL_PASSWORD: user_password
 
   #########################
   ### Booking Database ###
   #########################
-  Booking_db:
-    image: mysql:latest
-    restart: always
-    ports:
-      - 3307:3306
-    # environment:
-    #   - MYSQL_ROOT_PASSWORD: your_password
-    #   - MYSQL_DATABASE: database_name
-    #   - MYSQL_USER: user_name
-    #   - MYSQL_PASSWORD: user_password
+  # Booking_db:
+  #   image: mysql:latest
+  #   restart: always
+  #   ports:
+  #     - 3307:3306
+  # environment:
+  #   - MYSQL_ROOT_PASSWORD: your_password
+  #   - MYSQL_DATABASE: database_name
+  #   - MYSQL_USER: user_name
+  #   - MYSQL_PASSWORD: user_password
 
   #########################
   ### Forum Database ###
   #########################
-  Forum_db:
-    image: mysql:latest
-    restart: always
-    ports:
-      - 3308:3306
-    # environment:
-    #   - MYSQL_ROOT_PASSWORD: your_password
-    #   - MYSQL_DATABASE: database_name
-    #   - MYSQL_USER: user_name
-    #   - MYSQL_PASSWORD: user_password
+  # Forum_db:
+  #   image: mysql:latest
+  #   restart: always
+  #   ports:
+  #     - 3308:3306
+  # environment:
+  #   - MYSQL_ROOT_PASSWORD: your_password
+  #   - MYSQL_DATABASE: database_name
+  #   - MYSQL_USER: user_name
+  #   - MYSQL_PASSWORD: user_password
 
   ################
   ### RabbitMQ ###
@@ -178,7 +178,7 @@ services:
       - DATABASE=${DATABASE}
       - DOMAIN=${DOMAIN}
     depends_on:
-      - db
+      - Postgres_db
 
   ##############################
   ### Simple Booking Service ###

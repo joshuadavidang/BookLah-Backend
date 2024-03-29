@@ -42,7 +42,6 @@ def get_forum():
         try:
             booking = request.get_json()
             print("\nReceived an order in JSON:", booking)
-            
 
             # do the actual work
             # 1. Get forum based on concert ID
@@ -67,12 +66,11 @@ def get_forum():
             print(ex_str)
 
             return jsonify(
-                    {
-                        "code": 500,
-                        "message": "forum_complex.py internal error: " + ex_str,
-                    }
-                )
-            
+                {
+                    "code": 500,
+                    "message": "forum_complex.py internal error: " + ex_str,
+                }
+            )
 
     # if reached here, not a JSON request.
     return (
@@ -105,26 +103,27 @@ def processGetForum(booking):
                 properties=pika.BasicProperties(delivery_mode=2),
             )
             # Return error message
-            return jsonify(
+            return (
+                jsonify(
                     {
                         "code": 500,
                         "message": "Booking microservice failed to retrieve concert ID.",
                     }
                 ),
+            )
         else:
             print(
                 "\n\n-----Publishing the (booking info) message with routing_key=forum.info-----"
             )
             channel.basic_publish(
-                exchange=exchangename, routing_key="forum.info", body="Bookings obtained succesfully"
+                exchange=exchangename,
+                routing_key="forum.info",
+                body="Bookings obtained succesfully",
             )
-            
-    
+
         # Invoke forum microservice to get forum based on concert ID
         print("\n-----Invoking forum microservice to get forum-----")
-        forum_result = invoke_http(
-            forum_URL + user_id, method="GET"
-        )
+        forum_result = invoke_http(forum_URL + user_id, method="GET")
         print("forum_result", forum_result)
 
         # Check the forum result; if a failure, publish error to error microservice and return the error
@@ -155,7 +154,9 @@ def processGetForum(booking):
                 "\n\n-----Publishing the (booking info) message with routing_key=forum.info-----"
             )
             channel.basic_publish(
-                exchange=exchangename, routing_key="forum.info", body="forums obtained successfully"
+                exchange=exchangename,
+                routing_key="forum.info",
+                body="forums obtained successfully",
             )
 
         return forum_result
