@@ -1,4 +1,4 @@
-import amqp_connection
+import amqp_setup
 import json
 import pika
 
