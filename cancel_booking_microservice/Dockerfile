@@ -3,6 +3,6 @@ WORKDIR /usr/src/app
 COPY requirements.txt ./
 RUN python3 -m pip install --no-cache-dir -r requirements.txt
 COPY ./amqp_setup.py .
-COPY ./book_concert.py .
+COPY ./admin.py .
 COPY ./invokes.py .
-CMD [ "python3",  "amqp_setup", "book_concert.py" ]
+CMD [ "python3",  "amqp_setup", "admin.py" ]

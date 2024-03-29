@@ -3,10 +3,13 @@ import pika
 import uuid
 from os import environ
 
-hostname = "host.docker.internal"
+# hostname = "host.docker.internal"
+hostname = "localhost"
 port = 5672
-exchangename = environ.get("EXCHANGE_NAME")
-exchangetype = environ.get("EXCHANGE_TYPE")
+# exchangename = environ.get("EXCHANGE_NAME")
+# exchangetype = environ.get("EXCHANGE_TYPE")
+exchangename = "order_topic"
+exchangetype = "topic"
 
 
 def create_connection(correlation_id=None, max_retries=12, retry_interval=5):
