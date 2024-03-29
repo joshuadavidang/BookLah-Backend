@@ -4,7 +4,7 @@ from flask_cors import CORS
 import os
 
 app = Flask(__name__)
-PORT = 5003
+PORT = 5001
 CORS(app, supports_credentials=True)
 
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URI")
