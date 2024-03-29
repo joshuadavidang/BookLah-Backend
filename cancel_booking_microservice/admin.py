@@ -16,7 +16,7 @@ concert_URL = "http://localhost:5002/api/v1/isConcertSoldOut/"
 notification_URL = "http://localhost:5003/api/v1/send_email"
 activity_log_URL = "http://localhost:5004/api/v1/activity_log"
 error_URL = "http://localhost:5005/api/v1/error"
-payment_URL= "http://localhost:5006/api/v1/refund_payment"
+payment_URL= "http://localhost:5006/api/v1/refund/"
 
 
 exchangename = "booking_topic" # exchange name
@@ -96,7 +96,7 @@ def process_cancel_concert(booked_users_for_concert, concert_id):
 
          # Example of triggering refunds
         print('\n-----Triggering refunds-----')
-        payment_result = invoke_http(payment_URL, method='POST', json=booked_users_for_concert)
+        payment_result = invoke_http(payment_URL, method='POST', json=concert_id)
         print('refund_result:', payment_result)
 
         if code not in range(200, 300):
