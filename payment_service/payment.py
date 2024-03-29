@@ -2,15 +2,11 @@ from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from sqlalchemy.dialects.postgresql import UUID
 import os
-from os import environ
 import stripe
 import json
 
 load_dotenv()
-
-# app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URI")
 app = Flask(__name__)
 
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URI")
@@ -34,7 +30,7 @@ class StripeIds(db.Model):
     concert_name = db.Column(db.String(100), nullable=False)
     price_id = db.Column(db.String(100), nullable=False)
     product_id = db.Column(db.String(100), nullable=False)
-    
+
     def json(self):
         return {
             "concert_id": self.concert_id,
@@ -43,12 +39,12 @@ class StripeIds(db.Model):
             "price_id": self.price_id,
             "product_id": self.product_id,
         }
-    
+
 
 class PaymentIntent(db.Model):
     __tablename__ = "payment_intent"
     payment_intent = db.Column(db.String(100), primary_key=True)
-    concert_id = db.Column(UUID(as_uuid=True), nullable=False)
+    concert_id = db.Column(db.String(100), nullable=False)
 
     def json(self):
         return {
@@ -70,8 +66,9 @@ def get_stripeids(concert_id, category):
     # concert_id_uuid = UUID(str(concert_id))
 
     stripe_ids = db.session.scalars(
-            db.select(StripeIds).filter_by(concert_id=concert_id, category=category).
-            limit(1)
+        db.select(StripeIds)
+        .filter_by(concert_id=concert_id, category=category)
+        .limit(1)
     ).first()
 
     if stripe_ids:
@@ -118,23 +115,80 @@ def create_payment_intent():
         return jsonify({"error": {"message": e.user_message}}), 500
 
 
+## PAYMENT INTENT DB
+def add_payment_intent(payment_intent, concert_id):
+    if db.session.scalars(
+        db.select(PaymentIntent).filter_by(payment_intent=payment_intent).limit(1)
+    ).first():
+        return (
+            jsonify(
+                {
+                    "code": 400,
+                    "data": {"payment_intent": payment_intent},
+                    "message": "Payment Intent already exist.",
+                }
+            ),
+            400,
+        )
+
+    payment_intent_db = PaymentIntent(
+        payment_intent=payment_intent, concert_id=concert_id
+    )
+
+    try:
+        db.session.add(payment_intent_db)
+        db.session.commit()
+    except:
+        return (
+            jsonify(
+                {
+                    "code": 500,
+                    "data": {
+                        "payment_intent": payment_intent,
+                        "concert_id": concert_id,
+                    },
+                    "message": "An error occurred adding the Payment Intent.",
+                }
+            ),
+            500,
+        )
+
+    return (
+        jsonify(
+            {
+                "code": 201,
+                "data": payment_intent_db.json(),
+                "message": "Payment Intent have been added successfully",
+            }
+        ),
+        201,
+    )
+
+
 ## WEBHOOK
 @app.route("/webhook", methods=["POST"])
 def webhook_recieved():
-    webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
+    # webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
+    webhook_secret = (
+        "whsec_e3851f59862b600aa6e9b2230e2b8b09cc2735e1469bcf09fe66bc47a575d48b"
+    )
     request_data = json.loads(request.data)
 
     if webhook_secret:
-        signature = request.headers.get("stripe-signature")
+        # signature = request.headers.get("stripe-signature")
+        event = None
+        payload = request.data
+        sig_header = request.headers["STRIPE_SIGNATURE"]
+
         try:
-            event = stripe.Webhook.construct_event(
-                payload=request_data, sig_header=signature, secret=webhook_secret
-            )
+            event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
 
-            data = event["data"]
-
-        except Exception as e:
+        except ValueError as e:
             raise e
+        except stripe.error.SignatureVerificationError as e:
+            raise e
+
+        data = event["data"]
         event_type = event["type"]
 
     else:
@@ -144,11 +198,14 @@ def webhook_recieved():
     data_obj = data["object"]
 
     if event_type == "payment_intent.succeeded":
-        payment_intent = data_obj
+        payment_intent = data_obj["id"]
         # client_secret = payment_intent['client_secret']
-        concert_id = request.json.get("concert_id", None)
+        # concert_id = request.json.get("concert_id", None)
+        concert_id = "fcbeba79-7bfe-4648-83d8-552ba91c274f"
         add_payment_intent(payment_intent, concert_id)
-        print("Payment received!")
+        # print(payment_intent)
+    else:
+        print("Unhandled event type {}".format(event["type"]))
 
     return jsonify({"status": "success"})
 
@@ -202,107 +259,14 @@ def add_payment_intent(payment_intent, concert_id):
         201,
     )
 
-## WEBHOOK
-@app.route("/webhook", methods=["POST"])
-def webhook_recieved():
-    # webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
-    webhook_secret = 'whsec_e3851f59862b600aa6e9b2230e2b8b09cc2735e1469bcf09fe66bc47a575d48b'
-    request_data = json.loads(request.data)
-
-    if webhook_secret:
-        # signature = request.headers.get("stripe-signature")
-        event = None
-        payload = request.data
-        sig_header = request.headers['STRIPE_SIGNATURE']
-
-        try:
-            event = stripe.Webhook.construct_event(
-            payload, sig_header, webhook_secret
-            )
-
-        except ValueError as e:
-            raise e
-        except stripe.error.SignatureVerificationError as e:
-            raise e
-        
-        data = event["data"]
-        event_type = event["type"]
-
-    else:
-        data = request_data["data"]
-        event_type = request_data["type"]
-
-    data_obj = data["object"]
-    
-    if event_type == "payment_intent.succeeded":
-        payment_intent = data_obj["id"]
-        # client_secret = payment_intent['client_secret']
-        # concert_id = request.json.get("concert_id", None)
-        concert_id = "fcbeba79-7bfe-4648-83d8-552ba91c274f"
-        add_payment_intent(payment_intent, concert_id)
-        # print(payment_intent)
-    else:
-      print('Unhandled event type {}'.format(event['type']))
-
-    return jsonify({"status": "success"})
-
-
-## PAYMENT INTENT DB
-def add_payment_intent(payment_intent, concert_id):
-    if db.session.scalars(
-        db.select(PaymentIntent).filter_by(payment_intent=payment_intent).limit(1)
-    ).first():
-        return (
-            jsonify(
-                {
-                    "code": 400,
-                    "data": {"payment_intent": payment_intent},
-                    "message": "Payment Intent already exist.",
-                }
-            ),
-            400,
-        )
-
-    payment_intent_db = PaymentIntent(
-                                payment_intent=payment_intent,
-                                concert_id=concert_id
-                                )
-    
-    try:
-        db.session.add(payment_intent_db)
-        db.session.commit()
-    except:
-        return (
-            jsonify(
-                {
-                    "code": 500,
-                    "data": {"payment_intent": payment_intent,
-                             "concert_id" : concert_id},
-                    "message": "An error occurred adding the Payment Intent.",
-                }
-            ),
-            500,
-        )
-
-    return (
-        jsonify(
-            {
-                "code": 201,
-                "data": payment_intent_db.json(),
-                "message": "Payment Intent have been added successfully",
-            }
-        ),
-        201,
-    )
-
 
 ## ADMIN
-#create stripe ids from Stripe
+# create stripe ids from Stripe
 def create_stripeids(product_name, price):
 
     price = stripe.Price.create(
         currency="sgd",
-        unit_amount=price * 100, #in cents
+        unit_amount=price * 100,  # in cents
         product_data={"name": product_name},
     )
 
@@ -314,17 +278,20 @@ def create_stripeids(product_name, price):
 
 
 # add Stripe IDs to database
-@app.route("/api/v1/add_stripeids/<string:concert_id>/<string:category>", methods=["POST"])
+@app.route(
+    "/api/v1/add_stripeids/<string:concert_id>/<string:category>", methods=["POST"]
+)
 def add_stripeids(concert_id, category):
     if db.session.scalars(
-        db.select(StripeIds).filter_by(concert_id=concert_id, category=category).limit(1)
+        db.select(StripeIds)
+        .filter_by(concert_id=concert_id, category=category)
+        .limit(1)
     ).first():
         return (
             jsonify(
                 {
                     "code": 400,
-                    "data": {"concert_id": concert_id,
-                             "category": category},
+                    "data": {"concert_id": concert_id, "category": category},
                     "message": "Stripe IDs already exist.",
                 }
             ),
@@ -341,13 +308,13 @@ def add_stripeids(concert_id, category):
     stripeids = create_stripeids(concert_name, price)
 
     stripeids_db = StripeIds(
-                                concert_id=concert_id,
-                                category=category,
-                                concert_name=concert_name,
-                                price_id=stripeids["data"]["price_id"],
-                                product_id=stripeids["data"]["product_id"]
-                            )
-    
+        concert_id=concert_id,
+        category=category,
+        concert_name=concert_name,
+        price_id=stripeids["data"]["price_id"],
+        product_id=stripeids["data"]["product_id"],
+    )
+
     try:
         db.session.add(stripeids_db)
         db.session.commit()
@@ -356,8 +323,7 @@ def add_stripeids(concert_id, category):
             jsonify(
                 {
                     "code": 500,
-                    "data": {"concert_id": concert_id,
-                             "category": category},
+                    "data": {"concert_id": concert_id, "category": category},
                     "message": "An error occurred adding the Stripe IDs.",
                 }
             ),
@@ -421,7 +387,7 @@ def get_payment_intent(concert_id):
                 "data": {"payment_intent": [pi.json() for pi in payment_intent]},
             }
         )
-    return jsonify({"code": 404, "message": "There are no payment intents."}), 404
+    return jsonify({"code": 404, "message": "There are no payment intents."})
 
 
 if __name__ == "__main__":
