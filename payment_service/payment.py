@@ -15,7 +15,7 @@ app = Flask(__name__, static_url_path='', static_folder='frontend/', template_fo
 # app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URI")
 DB_ENVIRONMENT = os.getenv("DB_ENVIRONMENT")
 print(DB_ENVIRONMENT)
-app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+mysqlconnector://root@localhost:8889/payment"
+app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+mysqlconnector://root:root@localhost:8889/esd_proj"
 
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_recycle": 299}
@@ -50,7 +50,7 @@ class StripeIds(db.Model):
 class PaymentIntent(db.Model):
     __tablename__ = "payment_intent"
     payment_intent = db.Column(db.String(100), primary_key=True)
-    concert_id = db.Column(UUID(as_uuid=True), nullable=False)
+    concert_id = db.Column(db.String(100), nullable=False)
 
     def json(self):
         return {
@@ -190,9 +190,9 @@ def webhook_recieved():
         payment_intent = data_obj["id"]
         # client_secret = payment_intent['client_secret']
         # concert_id = request.json.get("concert_id", None)
-        concert_id = "123"
-        # add_payment_intent(payment_intent, concert_id)
-        print(payment_intent)
+        concert_id = "fcbeba79-7bfe-4648-83d8-552ba91c274f"
+        add_payment_intent(payment_intent, concert_id)
+        # print(payment_intent)
     else:
       print('Unhandled event type {}'.format(event['type']))
 
