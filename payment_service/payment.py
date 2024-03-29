@@ -4,6 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from sqlalchemy.dialects.postgresql import UUID
 import os
+from os import environ
 import stripe
 import json
 
@@ -11,9 +12,11 @@ load_dotenv()
 
 app = Flask(__name__, static_url_path='', static_folder='frontend/', template_folder='frontend')
 
-app.config["SQLALCHEMY_DATABASE_URI"] = (
-    "mysql+mysqlconnector://root:root@localhost:8889/esd_proj"
-)
+# app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URI")
+DB_ENVIRONMENT = os.getenv("DB_ENVIRONMENT")
+print(DB_ENVIRONMENT)
+app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+mysqlconnector://root@localhost:8889/payment"
+
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_recycle": 299}
 
@@ -154,19 +157,27 @@ def create_session():
 ## WEBHOOK
 @app.route("/webhook", methods=["POST"])
 def webhook_recieved():
-    webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
+    # webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
+    webhook_secret = 'whsec_e3851f59862b600aa6e9b2230e2b8b09cc2735e1469bcf09fe66bc47a575d48b'
     request_data = json.loads(request.data)
 
     if webhook_secret:
-        signature = request.headers.get("stripe-signature")
+        # signature = request.headers.get("stripe-signature")
+        event = None
+        payload = request.data
+        sig_header = request.headers['STRIPE_SIGNATURE']
+
         try:
             event = stripe.Webhook.construct_event(
-            payload=request_data, sig_header=signature, secret=webhook_secret)
+            payload, sig_header, webhook_secret
+            )
 
-            data = event["data"]
-
-        except Exception as e:
+        except ValueError as e:
             raise e
+        except stripe.error.SignatureVerificationError as e:
+            raise e
+        
+        data = event["data"]
         event_type = event["type"]
 
     else:
@@ -176,11 +187,14 @@ def webhook_recieved():
     data_obj = data["object"]
     
     if event_type == "payment_intent.succeeded":
-        payment_intent = data_obj
+        payment_intent = data_obj["id"]
         # client_secret = payment_intent['client_secret']
-        concert_id = request.json.get("concert_id", None)
-        add_payment_intent(payment_intent, concert_id)
-        print("Payment received!")
+        # concert_id = request.json.get("concert_id", None)
+        concert_id = "123"
+        # add_payment_intent(payment_intent, concert_id)
+        print(payment_intent)
+    else:
+      print('Unhandled event type {}'.format(event['type']))
 
     return jsonify({"status": "success"})
 
