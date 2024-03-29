@@ -91,7 +91,7 @@ def check_exchange(channel, exchangename, exchangetype):
         return False
 
 
-# if name == "main":
-#     connection = create_connection()
-#     channel = create_channel(connection)
-#     create_queues(channel)
+if name == "main":
+    connection = create_connection()
+    channel = create_channel(connection)
+    create_queues(channel)

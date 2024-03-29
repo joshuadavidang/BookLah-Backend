@@ -82,7 +82,7 @@ def get_forum():
     )
 
 
-def processGetForum(order):
+def processGetForum(booking):
     try:
         # Invoke booking microservice to get concert ID
         print("\n-----Invoking booking microservice to get concert ID-----")
