@@ -2,10 +2,15 @@ import time
 import pika
 from os import environ
 
-hostname = "host.docker.internal"
+# hostname = "host.docker.internal"
+# port = 5672
+# exchangename = environ.get("EXCHANGE_NAME")
+# exchangetype = environ.get("EXCHANGE_TYPE")
+
+hostname = "localhost"
 port = 5672
-exchangename = environ.get("EXCHANGE_NAME")
-exchangetype = environ.get("EXCHANGE_TYPE")
+exchangename = "booking_topic"
+exchangetype = "topic"
 
 
 # to create a connection to the broker
