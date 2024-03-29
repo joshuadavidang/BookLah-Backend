@@ -6,8 +6,8 @@ from dbConfig import app, db, PORT
 ######## 3 ENDPOINTS ########
 
 # /api/v1/get_bookings
-# /api/v1/get_booking/<string:booking_id>
-# /api/v1//api/v1/create_booking
+# /api/v1/get_bookings/<string:booking_id>
+# /api/v1/create_booking
 
 
 class Booking(db.Model):
@@ -102,6 +102,9 @@ def create_booking():
             ),
             500,
         )
+    
+
+
 
 
 if __name__ == "__main__":

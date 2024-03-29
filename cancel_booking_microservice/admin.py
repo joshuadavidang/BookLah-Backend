@@ -111,6 +111,7 @@ def process_cancel_concert(user_booking, concert_id):
         )
         print("cancel_concert_result:", cancel_concert_result)
 
+
         print("\n-----Triggering refunds-----")
         payment_result = invoke_http(
             payment_URL + user_booking["concert_id"], method="POST"

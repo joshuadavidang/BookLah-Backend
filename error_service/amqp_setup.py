@@ -1,19 +1,22 @@
 import time
 import pika
-from pika.exceptions import ChannelClosed, AMQPConnectionError
+from os import environ
 
 hostname = "localhost"
 port = 5672
 exchangename = "forum_topic"
 exchangetype = "topic"
 
-
+# to create a connection to the broker
 def create_connection(max_retries=12, retry_interval=5):
+    print("amqp_setup:create_connection")
+
     retries = 0
     connection = None
 
     while retries < max_retries:
         try:
+            print("amqp_setup: Trying connection")
             connection = pika.BlockingConnection(
                 pika.ConnectionParameters(
                     host=hostname,
@@ -21,10 +24,6 @@ def create_connection(max_retries=12, retry_interval=5):
                     heartbeat=3600,
                     blocked_connection_timeout=3600,
                 )
-            )
-            channel = connection.channel()
-            channel.exchange_declare(
-                exchange=exchangename, exchange_type=exchangetype, durable=True
             )
             print("amqp_setup: Connection established successfully")
             break
@@ -43,41 +42,41 @@ def create_connection(max_retries=12, retry_interval=5):
 
 
 def create_channel(connection):
+    print("amqp_setup:create_channel")
     channel = connection.channel()
+    print("amqp_setup:create exchange")
+    channel.exchange_declare(
+        exchange=exchangename, exchange_type=exchangetype, durable=True
+    )  # 'durable' makes the exchange survive broker restarts
     return channel
 
 
+# function to create queues
 def create_queues(channel):
+    print("amqp_setup:create queues")
     create_error_queue(channel)
     create_activity_log_queue(channel)
 
-    queue_name = 'forum_queue'
-    channel.queue_declare(queue=queue_name, durable=True)
-    channel.queue_bind(exchange=exchangename, queue=queue_name, routing_key="forum.info")
 
-
+# function to create Activity_Log queue
 def create_activity_log_queue(channel):
+    print("amqp_setup:create_activity_log_queue")
     a_queue_name = "Activity_Log"
     channel.queue_declare(
         queue=a_queue_name, durable=True
-    )
+    )  # 'durable' makes the queue survive broker restarts
     channel.queue_bind(exchange=exchangename, queue=a_queue_name, routing_key="#")
 
 
+# function to create Error queue
 def create_error_queue(channel):
+    print("amqp_setup:create_error_queue")
     e_queue_name = "Error"
     channel.queue_declare(queue=e_queue_name, durable=True)
     channel.queue_bind(exchange=exchangename, queue=e_queue_name, routing_key="*.error")
 
 
-def check_queue_exists(channel, queue_name):
-    try:
-        channel.queue_declare(queue=queue_name, passive=True)
-        print(f"Queue '{queue_name}' already exists.")
-    except ChannelClosed:
-        print(f"Queue '{queue_name}' does not exist.")
-
-
+# function to check if the exchange exists
 def check_exchange(channel, exchangename, exchangetype):
     try:
         channel.exchange_declare(exchangename, exchangetype, durable=True, passive=True)
@@ -91,4 +90,3 @@ if __name__ == "__main__":
     connection = create_connection()
     channel = create_channel(connection)
     create_queues(channel)
-

@@ -10,17 +10,20 @@ class Forums(db.Model):
     __tablename__ = "forums"
     concert_id = db.Column(db.String(255), primary_key=True)
     concert_name = db.Column(db.String(255), nullable=False)
+    user_id = db.Column(db.String(255), nullable=False)
 
     posts = relationship("Posts", backref="forum")
 
-    def __init__(self, concert_id, concert_name):
+    def __init__(self, concert_id, concert_name, user_id):
         self.concert_id = concert_id
         self.concert_name = concert_name
+        self.user_id = user_id
 
     def json(self):
         return {
             "concert_id": self.concert_id,
             "concert_name": self.concert_name,
+            "user_id": self.user_id
         }
 
 
@@ -110,13 +113,27 @@ def getPostsByUserId(concert_id):
 
 @app.route("/api/v1/getPost/<string:post_id>")
 def getPost(post_id):
-    post = db.session.scalars(
-        db.select(Posts).filter_by(post_id=post_id).limit(1)
-    ).first()
+    post = db.session.query(Posts).filter_by(post_id=post_id).first()
 
     if post:
+        post.views += 1
+        try:
+            db.session.commit()
+        except:
+            db.session.rollback()
+            return (
+                jsonify(
+                    {
+                        "code": 500,
+                        "message": "An error occurred while updating views count.",
+                    }
+                ),
+                500,
+            )
+
         return jsonify({"code": 200, "data": post.json()})
-    return jsonify({"code": 404, "message": "post not found."}), 404
+    else:
+        return jsonify({"code": 404, "message": "Post not found."}), 404
 
 
 @app.route("/api/v1/addPost/<string:post_id>", methods=["POST"])
@@ -346,12 +363,27 @@ def create_forum():
 
 @app.route("/api/v1/getForums", methods=["GET"])
 def get_forums():
+    
     forums = Forums.query.all()
     forum_list = [forum.json() for forum in forums]
     return jsonify({"code": 200, "data": forum_list}), 200
 
 
-@app.route("/api/v1/getForum/<string:concert_id>", methods=["GET"])
+@app.route("/api/v1/getForum/<string:user_id>", methods=["GET"])
+def get_forum_by_userId(user_id):
+    filtered_forums = Forums.query.filter(Forums.user_id == user_id).all()
+
+    print(filtered_forums)
+    filtered_forums_json = [forum.json() for forum in filtered_forums]
+    print(filtered_forums_json)
+    
+    if filtered_forums:
+        return jsonify({"code": 200, "data": filtered_forums_json}), 200
+    else:
+        return jsonify({"code": 404, "message": "Forum not found."}), 404
+
+
+@app.route("/api/v1/getForumByConcertID/<string:concert_id>", methods=["GET"])
 def get_forum(concert_id):
     forum = Forums.query.get(concert_id)
     if forum:
