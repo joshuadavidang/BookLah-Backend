@@ -3,6 +3,7 @@ import pika
 from os import environ
 
 hostname = "localhost"
+
 port = 5672
 exchangename = "booking_topic"
 exchangetype = "topic"
@@ -79,7 +80,7 @@ def create_error_queue(channel):
     channel.queue_bind(exchange=exchangename, queue=e_queue_name, routing_key="*.error")
 
 
-# if __name__ == "__main__":
-#     connection = create_connection()
-#     channel = create_channel(connection)
-#     create_queues(channel)
+if __name__ == "__main__":
+    connection = create_connection()
+    channel = create_channel(connection)
+    create_queues(channel)
