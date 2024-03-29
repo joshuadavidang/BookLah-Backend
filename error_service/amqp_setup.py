@@ -1,26 +1,22 @@
 import time
 import pika
-import uuid
 from os import environ
 
-# hostname = "host.docker.internal"
 hostname = "localhost"
 port = 5672
-# exchangename = environ.get("EXCHANGE_NAME")
-# exchangetype = environ.get("EXCHANGE_TYPE")
-exchangename = "order_topic"
+exchangename = "forum_topic"
 exchangetype = "topic"
 
-
-def create_connection(correlation_id=None, max_retries=12, retry_interval=5):
-    print("amqp_connection: Create_connection")
+# to create a connection to the broker
+def create_connection(max_retries=12, retry_interval=5):
+    print("amqp_setup:create_connection")
 
     retries = 0
     connection = None
 
     while retries < max_retries:
         try:
-            print("amqp_connection: Trying connection")
+            print("amqp_setup: Trying connection")
             connection = pika.BlockingConnection(
                 pika.ConnectionParameters(
                     host=hostname,
@@ -29,23 +25,20 @@ def create_connection(correlation_id=None, max_retries=12, retry_interval=5):
                     blocked_connection_timeout=3600,
                 )
             )
-            print("amqp_connection: Connection established successfully")
+            print("amqp_setup: Connection established successfully")
             break
         except pika.exceptions.AMQPConnectionError as e:
-            print(f"amqp_connection: Failed to connect: {e}")
+            print(f"amqp_setup: Failed to connect: {e}")
             retries += 1
-            print(f"amqp_connection: Retrying in {retry_interval} seconds...")
+            print(f"amqp_setup: Retrying in {retry_interval} seconds...")
             time.sleep(retry_interval)
 
     if connection is None:
         raise Exception(
-            "Unable to establish a connection to RabbitMQ after multiple attempts"
+            "amqp_setup: Unable to establish a connection to RabbitMQ after multiple attempts."
         )
 
-    if correlation_id:
-        return connection, correlation_id
-    else:
-        return connection
+    return connection
 
 
 def create_channel(connection):
@@ -97,7 +90,3 @@ if __name__ == "__main__":
     connection = create_connection()
     channel = create_channel(connection)
     create_queues(channel)
-    correlation_id = str(uuid.uuid4())
-    connection, correlation_id = create_connection(correlation_id=correlation_id)
-    print(f"Connection: {connection}")
-    print(f"Correlation ID: {correlation_id}")

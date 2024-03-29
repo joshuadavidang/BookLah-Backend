@@ -1,3 +1,12 @@
+# volumes:
+#   pgdata:
+#   rabbitmq_data:
+
+# networks:
+#   kong-net:
+#     driver: bridge
+#     name: kong-net
+
 version: "3.8"
 
 services:
@@ -80,7 +89,7 @@ services:
   #########################
   ### Postgres Database ###
   #########################
-  postgres_db:
+  Postgres_db:
     image: postgres:latest
     restart: always
     networks:
@@ -186,6 +195,60 @@ services:
   #   volumes:
   #     - rabbitmq_data:/var/lib/rabbitmq
 
+  #########################
+  ### Concert Database ###
+  #########################
+  # Concert_db:
+  #   image: mysql:latest
+  #   restart: always
+  #   ports:
+  #     - 3306:3306
+  # environment:
+  #   - MYSQL_ROOT_PASSWORD: your_password
+  #   - MYSQL_DATABASE: database_name
+  #   - MYSQL_USER: user_name
+  #   - MYSQL_PASSWORD: user_password
+
+  #########################
+  ### Booking Database ###
+  #########################
+  # Booking_db:
+  #   image: mysql:latest
+  #   restart: always
+  #   ports:
+  #     - 3307:3306
+  # environment:
+  #   - MYSQL_ROOT_PASSWORD: your_password
+  #   - MYSQL_DATABASE: database_name
+  #   - MYSQL_USER: user_name
+  #   - MYSQL_PASSWORD: user_password
+
+  #########################
+  ### Forum Database ###
+  #########################
+  # Forum_db:
+  #   image: mysql:latest
+  #   restart: always
+  #   ports:
+  #     - 3308:3306
+  # environment:
+  #   - MYSQL_ROOT_PASSWORD: your_password
+  #   - MYSQL_DATABASE: database_name
+  #   - MYSQL_USER: user_name
+  #   - MYSQL_PASSWORD: user_password
+
+  ################
+  ### RabbitMQ ###
+  ################
+  # rabbitmq:
+  #   image: rabbitmq:3-management
+  #   hostname: rabbitmq
+  #   container_name: rabbitmq
+  #   restart: always
+  #   ports:
+  #     - 5672:5672
+  #     - 15672:15672
+
   ###########################
   ### Simple Auth Service ###
   ###########################
@@ -211,7 +274,7 @@ services:
       - DATABASE=${DATABASE}
       - DOMAIN=${DOMAIN}
     depends_on:
-      - postgres_db
+      - Postgres_db
 
   ##############################
   ### Simple Booking Service ###
@@ -227,6 +290,7 @@ services:
       - PYTHONUNBUFFERED=1
 
     depends_on:
+      # - rabbitmq
       - auth_service
       - booking_db
 
@@ -235,10 +299,8 @@ services:
     command: mysqld --port=8890
     environment:
       - DATABASE_URI=${CONCERT_SERVICE_DATABASE_URI}
-      - STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY}
-      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
-      - PYTHONUNBUFFERED=1
     depends_on:
+      # - rabbitmq
       - auth_service
       - concert_db
 
@@ -254,9 +316,8 @@ services:
     environment:
       - MAILTRAP_API_KEY=${MAILTRAP_API_KEY}
       # rabbitMQ: "amqp://rabbitmq:5672"
-      - PYTHONUNBUFFERED=1
     depends_on:
-      - rabbitmq
+      # - rabbitmq
       - auth_service
 
   ##############################
@@ -297,111 +358,119 @@ services:
       - DATABASE_URI=${FORUM_SERVICE_DATABASE_URI}
       - PYTHONUNBUFFERED=1
     depends_on:
+      # - rabbitmq
       - auth_service
-      - forum_db
+
+  ############################
+  ### Simple Forum Service ###
+  ############################
+  forum_service:
+    build: ./forum_service
+    container_name: forum_service
+    restart: always
+    ports:
+      - 5007:5007
+    environment:
+      - DATABASE_URI=${FORUM_SERVICE_DATABASE_URI}
+    depends_on:
+      - auth_service
 
   ####################################
   ### Book Concert Complex Service ###
   ####################################
-  book_concert_microservice:
-    build: ./book_concert_microservice
-    container_name: book_concert_microservice
-    restart: always
-    ports:
-      - 5100:5100
-    environment:
-      - EXCHANGE_NAME=${EXCHANGE_NAME}
-      - EXCHANGE_TYPE=${EXCHANGE_TYPE}
-      - PYTHONUNBUFFERED=1
-      # - rabbit_host: rabbitmq
-      # - rabbit_port: 5672
-    depends_on:
-      - rabbitmq
-      - auth_service
-      - booking_service
-      - concert_service
-      - notification_service
-      - activity_log
-      - error
+  # book_concert_microservice:
+  #   build: ./book_concert_microservice
+  #   container_name: book_concert_microservice
+  #   restart: always
+  #   ports:
+  #     - 5100:5100
+  #   environment:
+  #     - EXCHANGE_NAME=${EXCHANGE_NAME_BOOK_CONCERT}
+  #     - EXCHANGE_TYPE=${EXCHANGE_TYPE_BOOK_CONCERT}
+  #   depends_on:
+  #     # - rabbitmq
+  #     - auth_service
+  #     - booking_service
+  #     - notification_service
 
   ####################################
   ### Cancel Booking Complex Service ###
   ####################################
-  cancel_booking_microservice:
-    build: ./cancel_booking_microservice
-    container_name: cancel_booking_microservice
-    restart: always
-    ports:
-      - 5200:5200
-    environment:
-      - EXCHANGE_NAME=${EXCHANGE_NAME}
-      - EXCHANGE_TYPE=${EXCHANGE_TYPE}
-      - PYTHONUNBUFFERED=1
-      # - rabbit_host: rabbitmq
-      # - rabbit_port: 5672
-    depends_on:
-      - rabbitmq
-      - auth_service
-      - concert_service
-      - booking_service
-      - payment_service
-      - notification_service
-      - activity_log
-      - error
+  # cancel_booking_microservice:
+  #   build: ./cancel_booking_microservice
+  #   container_name: cancel_booking_microservice
+  #   restart: always
+  #   ports:
+  #     - 5200:5200
+  #   environment:
+  #     - EXCHANGE_NAME=${EXCHANGE_NAME_CANCEL_BOOKING}
+  #     - EXCHANGE_TYPE=${EXCHANGE_TYPE_CANCEL_BOOKING}
+  #     - PYTHONUNBUFFERED=1
+  #     # - rabbit_host: rabbitmq
+  #     # - rabbit_port: 5672
+  #   depends_on:
+  #     # - rabbitmq
+  #     - auth_service
+  #     - concert_service
+  #     - booking_service
+  #     - payment_service
+  #     - notification_service
+  #     # - activity_log
+  #     # - error
 
   ####################################
   ### Forum Complex Service ###
   ####################################
-  get_forum_microservice:
-    build: ./forum_complex
-    container_name: forum_complex
-    restart: always
-    ports:
-      - 5300:5300
-    environment:
-      - EXCHANGE_NAME=${EXCHANGE_NAME}
-      - EXCHANGE_TYPE=${EXCHANGE_TYPE}
-      - PYTHONUNBUFFERED=1
-      # - rabbit_host: rabbitmq
-      # - rabbit_port: 5672
-    depends_on:
-      - rabbitmq
-      - auth_service
-      - forum_service
-      - booking_service
-      - activity_log
-      - error
+  # get_forum_microservice:
+  #   build: ./forum_complex_microservice
+  #   container_name: forum_complex
+  #   restart: always
+  #   ports:
+  #     - 5300:5300
+  #   environment:
+  #     - EXCHANGE_NAME=${EXCHANGE_NAME_FORUM}
+  #     - EXCHANGE_TYPE=${EXCHANGE_TYPE_FORUM}
+  #     - PYTHONUNBUFFERED=1
+  #     # - rabbit_host: rabbitmq
+  #     # - rabbit_port: 5672
+  #   depends_on:
+  #     # - rabbitmq
+  #     - auth_service
+  #     - forum_service
+  #     - booking_service
+  #     # - activity_log
+  #     # - error
 
   #########################################
   ### Simple Activity Log Service ###
   #########################################
-  activity_log:
-    build:
-      context: ./error_service
-      dockerfile: activity_log.Dockerfile
-    container_name: activity_log_service
-    restart: always
-    depends_on:
-      - rabbitmq
-    environment:
-      rabbit_host: rabbitmq
-      rabbit_port: 5672
-      a_queue_name: Activity_Log
-      PYTHONUNBUFFERED: 1
+  # activity_log:
+  #   build:
+  #     context: ./error_service
+  #     dockerfile: activity_log.Dockerfile
+  #   container_name: activity_log_service
+  #   restart: always
+  #   depends_on:
+  #     # - rabbitmq
+  #   environment:
+  #     rabbit_host: rabbitmq
+  #     rabbit_port: 5672
+  #     a_queue_name: Activity_Log
+  #     PYTHONUNBUFFERED: 1
 
   ###################################
   ### Simple Error Service ###
   ###################################
-  error:
-    build:
-      context: ./error_service
-      dockerfile: error.Dockerfile
-    container_name: error_service
-    restart: always
-    depends_on:
-      - rabbitmq
-    environment:
-      rabbit_host: rabbitmq
-      rabbit_port: 5672
-      e_queue_name: Error
-      PYTHONUNBUFFERED: 1
+  # error:
+  #   build:
+  #     context: ./error_service
+  #     dockerfile: error.Dockerfile
+  #   container_name: error_service
+  #   restart: always
+  #   depends_on:
+  #     # - rabbitmq
+  #   environment:
+  #     rabbit_host: rabbitmq
+  #     rabbit_port: 5672
+  #     e_queue_name: Error
+  #     PYTHONUNBUFFERED: 1

@@ -2,7 +2,7 @@ import time
 import pika
 
 hostname = "localhost"
-port = 5006
+port = 5672
 
 
 # function to create a connection to the broker
@@ -36,8 +36,6 @@ def create_connection(max_retries=12, retry_interval=5):
             "Unable to establish a connection to RabbitMQ after multiple attempts"
         )
 
-    return connection
-
 
 # function to check if the exchange exists
 def check_exchange(channel, exchangename, exchangetype):
@@ -50,4 +48,13 @@ def check_exchange(channel, exchangename, exchangetype):
 
 
 if __name__ == "__main__":
-    create_connection()
+    # Create a connection
+    connection = create_connection()
+    # Create a channel
+    channel = connection.channel()
+    # Check if the exchange exists
+    exchange_exists = check_exchange(channel, "booking_topic", "topic")
+    if exchange_exists:
+        print("The exchange 'booking_topic' exists.")
+    else:
+        print("The exchange 'booking_topic' does not exist.")

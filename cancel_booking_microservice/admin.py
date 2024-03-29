@@ -6,27 +6,28 @@ from invokes import invoke_http
 
 import pika
 import json
-import amqp_connection
+import amqp_setup
 
 app = Flask(__name__)
 CORS(app)
 
-booking_URL = "http://localhost:5001/api/v1/create_booking"
-concert_URL = "http://localhost:5002/api/v1/isConcertSoldOut/"
+booking_URL = "http://localhost:5001/api/v1/get_bookings"
+update_concert_URL = "http://localhost:5002/api/v1/updateConcertAvailability/"
 notification_URL = "http://localhost:5003/api/v1/send_email"
 activity_log_URL = "http://localhost:5004/api/v1/activity_log"
 error_URL = "http://localhost:5005/api/v1/error"
-payment_URL = "http://localhost:5006/api/v1/refund_payment"
+payment_URL = "http://localhost:5006/api/v1/refund/"
 
 
 exchangename = "order_topic"  # exchange name
 exchangetype = "topic"  # use a 'topic' exchange to enable interaction
 
-connection = amqp_connection.create_connection()
+connection = amqp_setup.create_connection()
 channel = connection.channel()
 
+
 # if the exchange is not yet created, exit the program
-if not amqp_connection.check_exchange(channel, exchangename, exchangetype):
+if not amqp_setup.check_exchange(channel, exchangename, exchangetype):
     print(
         "\nCreate the 'Exchange' before running this microservice. \nExiting the program."
     )
@@ -54,7 +55,8 @@ def cancel_concert():
                 ]
                 # Print only the booking information for users who booked tickets for the specified concert
                 for user_booking in booked_users_for_concert:
-                    print(user_booking)
+                    # process cancel concert
+                    result = process_cancel_concert(user_booking, concert_id)
             else:
                 return (
                     jsonify(
@@ -66,10 +68,6 @@ def cancel_concert():
                     booking_response.status_code,
                 )
 
-            # Process canceling concert
-            result = process_cancel_concert(
-                booked_users_for_concert, concert_id
-            )  # Pass booked_users_for_concert and concert_id
             return jsonify(result), result["code"]
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -98,7 +96,7 @@ def cancel_concert():
     )
 
 
-def process_cancel_concert(booked_users_for_concert, concert_id):
+def process_cancel_concert(user_booking, concert_id):
     try:
         # Perform necessary actions for canceling concert
         # Example:
@@ -106,25 +104,27 @@ def process_cancel_concert(booked_users_for_concert, concert_id):
         # 2. Trigger refunds
         # 3. Cancel event in the event microservice
 
-        # Example of canceling event
-        print("\n-----Canceling concert-----")
+        print("\n-----Set concert status to CANCELLED-----")
+        data = {"concertStatus": "CANCELLED"}
         cancel_concert_result = invoke_http(
-            concert_URL, method="POST", json=booked_users_for_concert
+            update_concert_URL + user_booking["concert_id"], method="PUT", json=data
         )
         print("cancel_concert_result:", cancel_concert_result)
 
-        # Example of triggering refunds
+
         print("\n-----Triggering refunds-----")
         payment_result = invoke_http(
-            payment_URL, method="POST", json=booked_users_for_concert
+            payment_URL + user_booking["concert_id"], method="POST"
         )
         print("refund_result:", payment_result)
 
-        # Example of notifying ticket holders
         print("\n-----Notifying ticket holders-----")
-        notification_result = invoke_http(
-            notification_URL, method="POST", json=booked_users_for_concert
-        )
+        data = {
+            "recipient_email": user_booking["email"],
+            "message": "Concert cancelled",
+        }
+
+        notification_result = invoke_http(notification_URL, method="POST", json=data)
         print("notification_result:", notification_result)
 
         code = notification_result["code"]
@@ -180,7 +180,7 @@ def process_cancel_concert(booked_users_for_concert, concert_id):
             "data": {
                 "notification_result": notification_result,
                 "payment_result": payment_result,
-                "cancel_event_result": cancel_event_result,
+                "cancel_event_result": cancel_concert_result,
             },
         }
 

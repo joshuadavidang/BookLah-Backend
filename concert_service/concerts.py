@@ -3,7 +3,6 @@ from dbConfig import app, db, PORT
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import Enum
 from datetime import datetime
-import stripe
 
 ######## 8 ENDPOINTS ########
 
@@ -318,33 +317,6 @@ def updateConcertDetails(concert_id):
             ),
             500,
         )
-
-
-### TO REMOVE
-class Product(db.Model):
-    __tablename__ = "product"
-    concert_id = db.Column(UUID(as_uuid=True), primary_key=True)
-    price = db.Column(db.INTEGER, nullable=False)
-
-    def __init__(self, concert_id, price):
-        self.concert_id = concert_id
-        self.price = price
-
-    def json(self):
-        return {"concert_id": self.concert_id, "price": self.price}
-
-
-@app.route("/api/v1/addProductToStripe", methods=["POST"])
-def addProductToStripe():
-    data = request.get_json()
-    name = data["name"]
-    price = data["price"]
-
-    product = stripe.Price.create(
-        currency="sgd", unit_amount=(price * 100), product_data={"name": name}
-    )
-
-    return jsonify({"code": 201, "data": product}), 201
 
 
 if __name__ == "__main__":

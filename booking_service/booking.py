@@ -1,19 +1,13 @@
-from flask import Flask, request, jsonify
+from flask import request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 import uuid
-import os
-
-app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URI")
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-PORT = 5001
-db = SQLAlchemy(app)
+from dbConfig import app, db, PORT
 
 ######## 3 ENDPOINTS ########
 
 # /api/v1/get_bookings
-# /api/v1/get_booking/<string:booking_id>
-# /api/v1//api/v1/create_booking
+# /api/v1/get_bookings/<string:booking_id>
+# /api/v1/create_booking
 
 
 class Booking(db.Model):
@@ -74,6 +68,22 @@ def find_booking_by_id(booking_id):
     )
 
 
+@app.route("/api/v1/get_user_bookings/<string:user_id>", methods=["GET"])
+def get_bookings_by_user(user_id):
+    booking_list = Booking.query.filter_by(user_id=user_id).all()
+    if len(booking_list) > 0:
+        return jsonify(
+            {
+                "code": 200,
+                "data": {"bookings": [booking.json() for booking in booking_list]},
+            }
+        )
+    return (
+        jsonify({"code": 404, "message": f"No bookings found for user ID: {user_id}"}),
+        404,
+    )
+
+
 @app.route("/api/v1/create_booking", methods=["POST"])
 def create_booking():
     data = request.json
@@ -92,6 +102,9 @@ def create_booking():
             ),
             500,
         )
+    
+
+
 
 
 if __name__ == "__main__":

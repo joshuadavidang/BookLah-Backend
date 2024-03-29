@@ -1,26 +1,19 @@
 import time
 import pika
-import uuid
-from os import environ
+from pika.exceptions import ChannelClosed, AMQPConnectionError
 
-# hostname = "host.docker.internal"
 hostname = "localhost"
 port = 5672
-# exchangename = environ.get("EXCHANGE_NAME")
-# exchangetype = environ.get("EXCHANGE_TYPE")
-exchangename = "order_topic"
+exchangename = "forum_topic"
 exchangetype = "topic"
 
 
-def create_connection(correlation_id=None, max_retries=12, retry_interval=5):
-    print("amqp_connection: Create_connection")
-
+def create_connection(max_retries=12, retry_interval=5):
     retries = 0
     connection = None
 
     while retries < max_retries:
         try:
-            print("amqp_connection: Trying connection")
             connection = pika.BlockingConnection(
                 pika.ConnectionParameters(
                     host=hostname,
@@ -29,61 +22,62 @@ def create_connection(correlation_id=None, max_retries=12, retry_interval=5):
                     blocked_connection_timeout=3600,
                 )
             )
-            print("amqp_connection: Connection established successfully")
+            channel = connection.channel()
+            channel.exchange_declare(
+                exchange=exchangename, exchange_type=exchangetype, durable=True
+            )
+            print("amqp_setup: Connection established successfully")
             break
         except pika.exceptions.AMQPConnectionError as e:
-            print(f"amqp_connection: Failed to connect: {e}")
+            print(f"amqp_setup: Failed to connect: {e}")
             retries += 1
-            print(f"amqp_connection: Retrying in {retry_interval} seconds...")
+            print(f"amqp_setup: Retrying in {retry_interval} seconds...")
             time.sleep(retry_interval)
 
     if connection is None:
         raise Exception(
-            "Unable to establish a connection to RabbitMQ after multiple attempts"
+            "amqp_setup: Unable to establish a connection to RabbitMQ after multiple attempts."
         )
 
-    if correlation_id:
-        return connection, correlation_id
-    else:
-        return connection
+    return connection
 
 
 def create_channel(connection):
-    print("amqp_setup:create_channel")
     channel = connection.channel()
-    print("amqp_setup:create exchange")
-    channel.exchange_declare(
-        exchange=exchangename, exchange_type=exchangetype, durable=True
-    )  # 'durable' makes the exchange survive broker restarts
     return channel
 
 
-# function to create queues
 def create_queues(channel):
-    print("amqp_setup:create queues")
     create_error_queue(channel)
     create_activity_log_queue(channel)
 
+    queue_name = 'forum_queue'
+    channel.queue_declare(queue=queue_name, durable=True)
+    channel.queue_bind(exchange=exchangename, queue=queue_name, routing_key="forum.info")
 
-# function to create Activity_Log queue
+
 def create_activity_log_queue(channel):
-    print("amqp_setup:create_activity_log_queue")
     a_queue_name = "Activity_Log"
     channel.queue_declare(
         queue=a_queue_name, durable=True
-    )  # 'durable' makes the queue survive broker restarts
+    )
     channel.queue_bind(exchange=exchangename, queue=a_queue_name, routing_key="#")
 
 
-# function to create Error queue
 def create_error_queue(channel):
-    print("amqp_setup:create_error_queue")
     e_queue_name = "Error"
     channel.queue_declare(queue=e_queue_name, durable=True)
     channel.queue_bind(exchange=exchangename, queue=e_queue_name, routing_key="*.error")
 
 
-# function to check if the exchange exists
+def check_queue_exists(channel, queue_name):
+    try:
+        channel.queue_declare(queue=queue_name, passive=True)
+        print(f"Queue '{queue_name}' already exists.")
+    except ChannelClosed:
+        print(f"Queue '{queue_name}' does not exist.")
+
+
 def check_exchange(channel, exchangename, exchangetype):
     try:
         channel.exchange_declare(exchangename, exchangetype, durable=True, passive=True)
@@ -97,7 +91,4 @@ if __name__ == "__main__":
     connection = create_connection()
     channel = create_channel(connection)
     create_queues(channel)
-    correlation_id = str(uuid.uuid4())
-    connection, correlation_id = create_connection(correlation_id=correlation_id)
-    print(f"Connection: {connection}")
-    print(f"Correlation ID: {correlation_id}")
+
