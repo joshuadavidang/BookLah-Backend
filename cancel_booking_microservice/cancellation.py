@@ -25,7 +25,6 @@ exchangetype = "topic"  # use a 'topic' exchange to enable interaction
 connection = amqp_connection.create_connection()
 channel = connection.channel()
 
-
 # if the exchange is not yet created, exit the program
 if not amqp_connection.check_exchange(channel, exchangename, exchangetype):
     print(
@@ -181,7 +180,7 @@ def process_cancel_concert(booked_users_for_concert, concert_id):
             "data": {
                 "notification_result": notification_result,
                 "payment_result": payment_result,
-                "cancel_event_result": cancel_concert_result,
+                "cancel_event_result": cancel_event_result,
             },
         }
 
