@@ -20,8 +20,10 @@ notification_URL = "http://localhost:5003/api/v1/send_email"
 activity_log_URL = "http://localhost:5004/api/v1/activity_log"
 error_URL = "http://localhost:5005/api/v1/error"
 
-exchangename = environ.get("EXCHANGE_NAME")
-exchangetype = environ.get("EXCHANGE_TYPE")
+# exchangename = environ.get("EXCHANGE_NAME")
+# exchangetype = environ.get("EXCHANGE_TYPE")
+exchangename = "booking_topic"
+exchangetype = "topic"
 connection = amqp_setup.create_connection()
 channel = connection.channel()
 

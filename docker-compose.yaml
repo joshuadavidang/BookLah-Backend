@@ -10,13 +10,12 @@ networks:
 version: "3.8"
 
 services:
-
   #######################################
   # Postgres: The database used by Kong
   #######################################
   kong-database:
     image: postgres:15 # tested 20231101; Ref: https://docs.konghq.com/gateway/latest/support/third-party/
-    platform: linux/amd64  # <- required for Mac M1 chip. Otherwise, can remove
+    platform: linux/amd64 # <- required for Mac M1 chip. Otherwise, can remove
     restart: always
     networks:
       - kong-net
@@ -39,8 +38,8 @@ services:
   # Kong database migration
   #######################################
   kong-migration:
-    image: kong/kong-gateway:3.2.2.5 
-    platform: linux/amd64  # <- required for Mac M1 chip. 
+    image: kong/kong-gateway:3.2.2.5
+    platform: linux/amd64 # <- required for Mac M1 chip.
     command: "kong migrations bootstrap"
     restart: on-failure
     networks:
@@ -57,8 +56,8 @@ services:
   # Kong: The API Gateway
   #######################################
   kong:
-    image: kong/kong-gateway:3.2.2.5 
-    platform: linux/amd64  # <- required for Mac M1 chip. 
+    image: kong/kong-gateway:3.2.2.5
+    platform: linux/amd64 # <- required for Mac M1 chip.
     restart: always
     networks:
       - kong-net
@@ -154,17 +153,6 @@ services:
   #     - 5672:5672
   #     - 15672:15672
 
-  rabbitmq:
-    image: rabbitmq
-    hostname: rabbitmq
-    container_name: rabbitmq
-    restart: always
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-
   ###########################
   ### Simple Auth Service ###
   ###########################
@@ -235,7 +223,7 @@ services:
       - MAILTRAP_API_KEY=${MAILTRAP_API_KEY}
       # rabbitMQ: "amqp://rabbitmq:5672"
     depends_on:
-      - rabbitmq
+      # - rabbitmq
       - auth_service
 
   ##############################
@@ -272,62 +260,99 @@ services:
   ####################################
   ### Book Concert Complex Service ###
   ####################################
-  book_concert_microservice:
-    build: ./book_concert_microservice
-    container_name: book_concert_microservice
-    restart: always
-    ports:
-      - 5100:5100
-    environment:
-      - EXCHANGE_NAME=${EXCHANGE_NAME}
-      - EXCHANGE_TYPE=${EXCHANGE_TYPE}
-      # - rabbit_host: rabbitmq
-      # - rabbit_port: 5672
-    depends_on:
-      - rabbitmq
-      - auth_service
-      - booking_service
-      - concert_service
-      - notification_service
+  # book_concert_microservice:
+  #   build: ./book_concert_microservice
+  #   container_name: book_concert_microservice
+  #   restart: always
+  #   ports:
+  #     - 5100:5100
+  #   environment:
+  #     - EXCHANGE_NAME=${EXCHANGE_NAME_BOOK_CONCERT}
+  #     - EXCHANGE_TYPE=${EXCHANGE_TYPE_BOOK_CONCERT}
+  #   depends_on:
+  #     # - rabbitmq
+  #     - auth_service
+  #     - booking_service
+  #     - notification_service
 
   ####################################
   ### Cancel Booking Complex Service ###
   ####################################
-  cancel_booking_microservice:
-    build: ./cancel_booking_microservice
-    container_name: cancel_booking_microservice
-    restart: always
-    ports:
-      - 5200:5200
-    environment:
-      - EXCHANGE_NAME=${EXCHANGE_NAME}
-      - EXCHANGE_TYPE=${EXCHANGE_TYPE}
-      # - rabbit_host: rabbitmq
-      # - rabbit_port: 5672
-    depends_on:
-      - rabbitmq
-      - auth_service
-      - concert_service
-      - booking_service
-      - payment_service
-      - notification_service
+  # cancel_booking_microservice:
+  #   build: ./cancel_booking_microservice
+  #   container_name: cancel_booking_microservice
+  #   restart: always
+  #   ports:
+  #     - 5200:5200
+  #   environment:
+  #     - EXCHANGE_NAME=${EXCHANGE_NAME_CANCEL_BOOKING}
+  #     - EXCHANGE_TYPE=${EXCHANGE_TYPE_CANCEL_BOOKING}
+  #     - PYTHONUNBUFFERED=1
+  #     # - rabbit_host: rabbitmq
+  #     # - rabbit_port: 5672
+  #   depends_on:
+  #     # - rabbitmq
+  #     - auth_service
+  #     - concert_service
+  #     - booking_service
+  #     - payment_service
+  #     - notification_service
+  #     # - activity_log
+  #     # - error
 
   ####################################
   ### Forum Complex Service ###
   ####################################
-  get_forum_microservice:
-    build: ./get_forum_microservice
-    container_name: get_forum_microservice
-    restart: always
-    ports:
-      - 5300:5300
-    environment:
-      - EXCHANGE_NAME=${EXCHANGE_NAME}
-      - EXCHANGE_TYPE=${EXCHANGE_TYPE}
-      # - rabbit_host: rabbitmq
-      # - rabbit_port: 5672
-    depends_on:
-      - rabbitmq
-      - auth_service
-      - forum_service
-      - booking_service
+  # get_forum_microservice:
+  #   build: ./forum_complex_microservice
+  #   container_name: forum_complex
+  #   restart: always
+  #   ports:
+  #     - 5300:5300
+  #   environment:
+  #     - EXCHANGE_NAME=${EXCHANGE_NAME_FORUM}
+  #     - EXCHANGE_TYPE=${EXCHANGE_TYPE_FORUM}
+  #     - PYTHONUNBUFFERED=1
+  #     # - rabbit_host: rabbitmq
+  #     # - rabbit_port: 5672
+  #   depends_on:
+  #     # - rabbitmq
+  #     - auth_service
+  #     - forum_service
+  #     - booking_service
+  #     # - activity_log
+  #     # - error
+
+  #########################################
+  ### Simple Activity Log Service ###
+  #########################################
+  # activity_log:
+  #   build:
+  #     context: ./error_service
+  #     dockerfile: activity_log.Dockerfile
+  #   container_name: activity_log_service
+  #   restart: always
+  #   depends_on:
+  #     # - rabbitmq
+  #   environment:
+  #     rabbit_host: rabbitmq
+  #     rabbit_port: 5672
+  #     a_queue_name: Activity_Log
+  #     PYTHONUNBUFFERED: 1
+
+  ###################################
+  ### Simple Error Service ###
+  ###################################
+  # error:
+  #   build:
+  #     context: ./error_service
+  #     dockerfile: error.Dockerfile
+  #   container_name: error_service
+  #   restart: always
+  #   depends_on:
+  #     # - rabbitmq
+  #   environment:
+  #     rabbit_host: rabbitmq
+  #     rabbit_port: 5672
+  #     e_queue_name: Error
+  #     PYTHONUNBUFFERED: 1
