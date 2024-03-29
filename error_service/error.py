@@ -1,4 +1,4 @@
-import amqp_setup
+import error_service.amqp_setup as amqp_setup
 import json
 import pika
 
