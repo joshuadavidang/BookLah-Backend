@@ -198,6 +198,56 @@ services:
   #     - auth_service
   #     - forum_db
 
+  ################
+  ### RabbitMQ ###
+  ################
+  rabbitmq:
+    image: rabbitmq:3-management
+    hostname: rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - ./rabbitmq.config:/etc/rabbitmq/rabbitmq.config
+      - ./rabbitmq_definitions.json:/etc/rabbitmq/rabbitmq_definitions.json
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  #########################################
+  ### Simple Activity Log Service ###
+  #########################################
+  activity_log:
+    build:
+      context: ./error_service
+      dockerfile: activity_log.Dockerfile
+    container_name: activity_log_service
+    restart: always
+    depends_on:
+      - rabbitmq
+    environment:
+      rabbit_host: rabbitmq
+      rabbit_port: 5672
+      a_queue_name: Activity_Log
+      PYTHONUNBUFFERED: 1
+
+  ###################################
+  ### Simple Error Service ###
+  ###################################
+  error:
+    build:
+      context: ./error_service
+      dockerfile: error.Dockerfile
+    container_name: error_service
+    restart: always
+    depends_on:
+      - rabbitmq
+    environment:
+      rabbit_host: rabbitmq
+      rabbit_port: 5672
+      e_queue_name: Error
+      PYTHONUNBUFFERED: 1
+
+
   # ####################################
   # ### Book Concert Complex Service ###
   # ####################################
@@ -269,55 +319,6 @@ services:
   #     - booking_service
   #     - activity_log
   #     - error
-
-  # ################
-  # ### RabbitMQ ###
-  # ################
-  # rabbitmq:
-  #   image: rabbitmq:3-management
-  #   hostname: rabbitmq
-  #   restart: always
-  #   ports:
-  #     - "5672:5672"
-  #     - "15672:15672"
-  #   volumes:
-  #     - ./rabbitmq.config:/etc/rabbitmq/rabbitmq.config
-  #     - ./rabbitmq_definitions.json:/etc/rabbitmq/rabbitmq_definitions.json
-  #     - rabbitmq_data:/var/lib/rabbitmq
-
-  # #########################################
-  # ### Simple Activity Log Service ###
-  # #########################################
-  # activity_log:
-  #   build:
-  #     context: ./error_service
-  #     dockerfile: activity_log.Dockerfile
-  #   container_name: activity_log_service
-  #   restart: always
-  #   depends_on:
-  #     - rabbitmq
-  #   environment:
-  #     rabbit_host: rabbitmq
-  #     rabbit_port: 5672
-  #     a_queue_name: Activity_Log
-  #     PYTHONUNBUFFERED: 1
-
-  # ###################################
-  # ### Simple Error Service ###
-  # ###################################
-  # error:
-  #   build:
-  #     context: ./error_service
-  #     dockerfile: error.Dockerfile
-  #   container_name: error_service
-  #   restart: always
-  #   depends_on:
-  #     - rabbitmq
-  #   environment:
-  #     rabbit_host: rabbitmq
-  #     rabbit_port: 5672
-  #     e_queue_name: Error
-  #     PYTHONUNBUFFERED: 1
 
   # #########################
   # ### Postgres Database ###
