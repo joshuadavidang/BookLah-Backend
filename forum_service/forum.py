@@ -29,7 +29,7 @@ class Forums(db.Model):
 
 class Posts(db.Model):
     __tablename__ = "posts"
-    post_id = db.Column(UUID(as_uuid=True), primary_key=True)
+    post_id = db.Column(db.String(255), primary_key=True)
     concert_id = db.Column(
         db.String(255), db.ForeignKey("forums.concert_id"), nullable=False
     )
@@ -69,9 +69,9 @@ class Posts(db.Model):
 
 class Comments(db.Model):
     __tablename__ = "comments"
-    comment_id = db.Column(UUID(as_uuid=True), primary_key=True)
-    post_id = db.Column(UUID(as_uuid=True), ForeignKey("posts.post_id"), nullable=False)
-    user_id = db.Column(db.String(255), nullable=False)
+    comment_id = db.Column(db.String(100), primary_key=True)
+    post_id = db.Column(db.String(100), ForeignKey("posts.post_id"), nullable=False)
+    user_id = db.Column(db.String(100), nullable=False)
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.now())
     edited_at = db.Column(db.DateTime, nullable=False, default=datetime.now())
