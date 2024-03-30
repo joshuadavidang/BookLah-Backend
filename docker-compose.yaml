@@ -258,8 +258,8 @@ services:
   #   ports:
   #     - 5100:5100
   #   environment:
-  #     - EXCHANGE_NAME=${EXCHANGE_NAME}
-  #     - EXCHANGE_TYPE=${EXCHANGE_TYPE}
+  #     - EXCHANGE_NAME=${EXCHANGE_NAME_BOOK_CONCERT}
+  #     - EXCHANGE_TYPE=${EXCHANGE_TYPE_BOOK_CONCERT}
   #     - PYTHONUNBUFFERED=1
   #     # - rabbit_host: rabbitmq
   #     # - rabbit_port: 5672
@@ -282,8 +282,8 @@ services:
   #   ports:
   #     - 5200:5200
   #   environment:
-  #     - EXCHANGE_NAME=${EXCHANGE_NAME}
-  #     - EXCHANGE_TYPE=${EXCHANGE_TYPE}
+  #     - EXCHANGE_NAME=${EXCHANGE_NAME_CANCEL_BOOKING}
+  #     - EXCHANGE_TYPE=${EXCHANGE_TYPE_CANCEL_BOOKING}
   #     - PYTHONUNBUFFERED=1
   #     # - rabbit_host: rabbitmq
   #     # - rabbit_port: 5672
@@ -300,15 +300,15 @@ services:
   # ####################################
   # ### Forum Complex Service ###
   # ####################################
-  # get_forum_microservice:
+  # forum_complex:
   #   build: ./forum_complex
   #   container_name: forum_complex
   #   restart: always
   #   ports:
   #     - 5300:5300
   #   environment:
-  #     - EXCHANGE_NAME=${EXCHANGE_NAME}
-  #     - EXCHANGE_TYPE=${EXCHANGE_TYPE}
+  #     - EXCHANGE_NAME=${EXCHANGE_NAME_FORUM}
+  #     - EXCHANGE_TYPE=${EXCHANGE_TYPE_FORUM}
   #     - PYTHONUNBUFFERED=1
   #     # - rabbit_host: rabbitmq
   #     # - rabbit_port: 5672
