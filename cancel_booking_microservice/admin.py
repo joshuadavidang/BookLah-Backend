@@ -11,12 +11,12 @@ import amqp_connection
 app = Flask(__name__)
 CORS(app)
 
-booking_URL = "http://localhost:5001/api/v1/get_bookings"
-update_concert_URL = "http://localhost:5002/api/v1/updateConcertAvailability/"
-notification_URL = "http://localhost:5003/api/v1/send_email"
-activity_log_URL = "http://localhost:5004/api/v1/activity_log"
-error_URL = "http://localhost:5005/api/v1/error"
-payment_URL = "http://localhost:5006/api/v1/refund/"
+booking_URL = "http://booking_service:5001/api/v1/get_bookings"
+update_concert_URL = "http://concert_service:5002/api/v1/updateConcertAvailability/"
+notification_URL = "http://notification_service:5003/api/v1/send_email"
+activity_log_URL = "http://activity_log_service:5004/api/v1/activity_log"
+error_URL = "http://error_service:5005/api/v1/error"
+payment_URL = "http://payment_service:5006/api/v1/refund/"
 
 
 exchangename = "order_topic"  # exchange name
@@ -120,7 +120,8 @@ def process_cancel_concert(user_booking, concert_id):
         print("\n-----Notifying ticket holders-----")
         data = {
             "recipient_email": user_booking["email"],
-            "message": "Concert cancelled",
+            "subject": "[Alert]",
+            "message": "Order has been cancelled",
         }
 
         notification_result = invoke_http(notification_URL, method="POST", json=data)

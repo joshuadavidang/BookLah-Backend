@@ -15,8 +15,8 @@ import pika
 import json
 import amqp_connection
 
-booking_URL = "http://localhost:5001/api/v1/get_user_bookings/"
-forum_URL = "http://localhost:5007/api/v1/getForum/"
+booking_URL = "http://booking_service:5001/api/v1/get_user_bookings/"
+forum_URL = "http://forum_service:5007/api/v1/getForum/"
 
 
 # exchangename = environ.get("EXCHANGE_NAME")

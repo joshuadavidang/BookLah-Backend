@@ -164,9 +164,9 @@ services:
     # depends_on:
     #   - auth_service
 
-  # ###################################
-  # ### Simple Notification Service ###
-  # ###################################
+  ####################################
+  #### Simple Notification Service ###
+  ####################################
   notification_service:
     build: ./notification_service
     container_name: notification_service
@@ -181,9 +181,9 @@ services:
       - rabbitmq
       # - auth_service
 
-  # ############################
-  # ### Simple Forum Service ###
-  # ############################
+  #############################
+  #### Simple Forum Service ###
+  #############################
   forum_service:
     build: ./forum_service
     container_name: forum_service
@@ -212,9 +212,9 @@ services:
       - ./rabbitmq_definitions.json:/etc/rabbitmq/rabbitmq_definitions.json
       - rabbitmq_data:/var/lib/rabbitmq
 
-  #########################################
+  ###################################
   ### Simple Activity Log Service ###
-  #########################################
+  ###################################
   activity_log:
     build:
       context: ./activity_log_service
@@ -229,9 +229,9 @@ services:
       a_queue_name: Activity_Log
       PYTHONUNBUFFERED: 1
 
-  ###################################
+  ############################
   ### Simple Error Service ###
-  ###################################
+  ############################
   error:
     build:
       context: ./error_service
@@ -246,13 +246,12 @@ services:
       e_queue_name: Error
       PYTHONUNBUFFERED: 1
 
-  # ####################################
-  # ### Book Concert Complex Service ###
-  # ####################################
+  #####################################
+  #### Book Concert Complex Service ###
+  #####################################
   book_concert_microservice:
     build: ./book_concert_microservice
     container_name: book_concert_microservice
-    restart: always
     ports:
       - 5100:5100
     environment:
@@ -270,9 +269,9 @@ services:
       - activity_log
       - error
 
-  # ####################################
-  # ### Cancel Booking Complex Service ###
-  # ####################################
+  #######################################
+  #### Cancel Booking Complex Service ###
+  #######################################
   cancel_booking_microservice:
     build: ./cancel_booking_microservice
     container_name: cancel_booking_microservice
@@ -283,8 +282,8 @@ services:
       - EXCHANGE_NAME=${EXCHANGE_NAME_CANCEL_BOOKING}
       - EXCHANGE_TYPE=${EXCHANGE_TYPE_CANCEL_BOOKING}
       - PYTHONUNBUFFERED=1
-      # - rabbit_host: rabbitmq
-      # - rabbit_port: 5672
+      - rabbit_host=rabbitmq
+      - rabbit_port=5672
     depends_on:
       - rabbitmq
       #- auth_service
@@ -295,9 +294,9 @@ services:
       - activity_log
       - error
 
-  # ####################################
-  # ### Forum Complex Service ###
-  # ####################################
+  ##############################
+  #### Forum Complex Service ###
+  ##############################
   get_forum_microservice:
     build: ./forum_complex_microservice
     container_name: forum_complex_microservice
