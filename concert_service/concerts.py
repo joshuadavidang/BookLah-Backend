@@ -1,6 +1,5 @@
 from flask import request, jsonify
 from dbConfig import app, db, PORT
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import Enum
 from datetime import datetime
 
@@ -17,15 +16,16 @@ from datetime import datetime
 
 
 class Concert(db.Model):
-    __tablename__ = "concert"
-    concert_id = db.Column(UUID(as_uuid=True), primary_key=True)
-    performer = db.Column(db.String(50), nullable=False)
-    title = db.Column(db.String(150), nullable=False)
-    venue = db.Column(db.String(150), nullable=False)
+    __tablename__ = "concerts"
+    concert_id = db.Column(db.String(100), primary_key=True)
+    performer = db.Column(db.String(100), nullable=False)
+    title = db.Column(db.String(100), nullable=False)
+    venue = db.Column(db.String(100), nullable=False)
     date = db.Column(db.String, nullable=False)
     time = db.Column(db.String, nullable=False)
     capacity = db.Column(db.Integer, nullable=False)
     description = db.Column(db.String(1000), nullable=False)
+    category = db.Column(db.String(100), nullable=False, default="Category 1")
     sold_out = db.Column(db.Boolean, nullable=False, default=False)
     price = db.Column(db.INTEGER, nullable=False, default=0)
     concert_status = db.Column(
@@ -34,7 +34,7 @@ class Concert(db.Model):
         default="AVAILABLE",
     )
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.now())
-    created_by = db.Column(db.String(50), nullable=False)
+    created_by = db.Column(db.String(100), nullable=False)
 
     def __init__(
         self,
