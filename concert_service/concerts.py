@@ -450,29 +450,58 @@ def createSeat(concert_id, category, seat_number):
 @app.route("/seats/<string:concert_id>/<string:category>/<string:seat_number>", methods=["POST"])
 def updateSeat(concert_id, category, seat_number):
     try:
-        seats = db.session.scalars(db.select(Seats).filter_by(concert_id=concert_id, category=category, seat_number=seat_number).limit(1)).first()
+        # seats = db.session.scalars(db.select(Seats).filter_by(concert_id=concert_id, category=category, seat_number=seat_number).limit(1)).first()
 
-        if not seats:
-            return jsonify(
-                {
-                    "code": 404,
-                    "data": {
-                        "concert_id": concert_id, 
-                        "category": category, 
-                        "seat_number": seat_number
-                    },
-                    "message": "Seat not found."
-                }
-            ), 404
+        seat_numbers_list = seat_number.split(',')
+        seats_to_update = []
 
-        data = request.get_json()
-        if 'taken' in data and data['taken']:
-            seats.taken = True
+        for seat_number in seat_numbers_list:
+            seat = db.session.scalars(db.select(Seats).filter_by(concert_id=concert_id, category=category, seat_number=seat_number).limit(1)).first()
+
+            if not seats:
+                return jsonify(
+                    {
+                        "code": 404,
+                        "data": {
+                            "concert_id": concert_id, 
+                            "category": category, 
+                            "seat_number": seat_number
+                        },
+                        "message": "Seat not found."
+                    }
+                ), 404
+            
+            if seat.taken == True:
+                return jsonify(
+                    {
+                        "code": 409,
+                        "data": {
+                            "concert_id": concert_id,
+                            "category": category,
+                            "seat_number": seat_number
+                        },
+                        "message": f"Seat {seat_number} already taken."
+                    }
+                ), 409
+            
+            seats_to_update.append(seat)
+
+            data = request.get_json()
+        # if 'taken' in data and data['taken']:
+        #     seats.taken = True
+            
+            for seat in seats_to_update:
+                seat.taken = True
+
             db.session.commit()
             return jsonify({
                 "code": 200,
                 "message": "Seat updated successfully.",
-                "data": seats.json()
+                "data": {
+                    "concert_id": concert_id,
+                    "category": category,
+                    "seat_number": seat_number
+                }
             }), 200
         else:
             return jsonify({
