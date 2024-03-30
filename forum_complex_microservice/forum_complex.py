@@ -45,7 +45,7 @@ def get_forum():
             
 
             # do the actual work
-            # 1. Get forum based on concert ID
+            # 1. Get forum based on userID
             result = processGetForum(booking)
             print("\n------------------------")
             print("\nresult: ", result)
