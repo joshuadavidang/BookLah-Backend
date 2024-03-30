@@ -6,8 +6,9 @@ from dbConfig import app, db, PORT
 ######## 3 ENDPOINTS ########
 
 # /api/v1/get_bookings
-# /api/v1/get_bookings/<string:booking_id>
+# /api/v1/get_booking/<string:booking_id>
 # /api/v1/create_booking
+# /api/v1/get_user_bookings/<string:user_id>
 
 
 class Booking(db.Model):
