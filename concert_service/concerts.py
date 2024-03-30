@@ -82,7 +82,7 @@ class Seats(db.Model):
         __tablename__ = "seats"
 
         concert_id = db.Column(db.String(50), nullable=False)
-        category = db.Column(db.Integer, nullable=False)
+        category = db.Column(db.String, nullable=False)
         seat_number = db.Column(db.Integer, nullable=False)
         taken = db.Column(db.Boolean, nullable=False)
 
@@ -106,7 +106,7 @@ class Seats(db.Model):
 class ConcertTracking(db.Model):
     __tablename__ = "tracking"
     concert_id = db.Column(db.String(50), nullable=False)
-    category = db.Column(db.Integer, primary_key=True)
+    category = db.Column(db.String, primary_key=True)
     capacity = db.Column(db.Integer, nullable=False)
     takenSeats = db.Column(db.Integer, nullable=False)
 
@@ -409,12 +409,21 @@ def createSeat(concert_id, category, seat_number):
             400,
         )
 
+    # seat_data = {
+    #     "concert_id": concert_id,
+    #     "category": category,
+    #     "seat_number": seat_number,
+    #     "taken": False,
+    # }
+
+    data = request.json
+
     seat_data = {
-        "concert_id": concert_id,
-        "category": category,
+        "concert_id": data["concert_id"],
+        "category": data["category"],
         "seat_number": seat_number,
-        "taken": False,
-    }
+        "taken": False
+}
     seat = Seats(**seat_data)
 
     try:
