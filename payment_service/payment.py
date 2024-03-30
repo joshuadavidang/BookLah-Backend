@@ -2,13 +2,11 @@ from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from sqlalchemy.dialects.postgresql import UUID
 import os
 import stripe
 import json
 
 load_dotenv()
-
 app = Flask(__name__)
 
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URI")
@@ -117,23 +115,80 @@ def create_payment_intent():
         return jsonify({"error": {"message": e.user_message}}), 500
 
 
+## PAYMENT INTENT DB
+def add_payment_intent(payment_intent, concert_id):
+    if db.session.scalars(
+        db.select(PaymentIntent).filter_by(payment_intent=payment_intent).limit(1)
+    ).first():
+        return (
+            jsonify(
+                {
+                    "code": 400,
+                    "data": {"payment_intent": payment_intent},
+                    "message": "Payment Intent already exist.",
+                }
+            ),
+            400,
+        )
+
+    payment_intent_db = PaymentIntent(
+        payment_intent=payment_intent, concert_id=concert_id
+    )
+
+    try:
+        db.session.add(payment_intent_db)
+        db.session.commit()
+    except:
+        return (
+            jsonify(
+                {
+                    "code": 500,
+                    "data": {
+                        "payment_intent": payment_intent,
+                        "concert_id": concert_id,
+                    },
+                    "message": "An error occurred adding the Payment Intent.",
+                }
+            ),
+            500,
+        )
+
+    return (
+        jsonify(
+            {
+                "code": 201,
+                "data": payment_intent_db.json(),
+                "message": "Payment Intent have been added successfully",
+            }
+        ),
+        201,
+    )
+
+
 ## WEBHOOK
 @app.route("/webhook", methods=["POST"])
 def webhook_recieved():
-    webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
+    # webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
+    webhook_secret = (
+        "whsec_e3851f59862b600aa6e9b2230e2b8b09cc2735e1469bcf09fe66bc47a575d48b"
+    )
     request_data = json.loads(request.data)
 
     if webhook_secret:
-        signature = request.headers.get("stripe-signature")
+        # signature = request.headers.get("stripe-signature")
+        event = None
+        payload = request.data
+        sig_header = request.headers["STRIPE_SIGNATURE"]
+
         try:
-            event = stripe.Webhook.construct_event(
-                payload=request_data, sig_header=signature, secret=webhook_secret
-            )
+            event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
 
-            data = event["data"]
-
-        except Exception as e:
+        except ValueError as e:
             raise e
+        except stripe.error.SignatureVerificationError as e:
+            raise e
+
+        data = event["data"]
         event_type = event["type"]
 
     else:
@@ -143,11 +198,14 @@ def webhook_recieved():
     data_obj = data["object"]
 
     if event_type == "payment_intent.succeeded":
-        payment_intent = data_obj
+        payment_intent = data_obj["id"]
         # client_secret = payment_intent['client_secret']
-        concert_id = request.json.get("concert_id", None)
+        # concert_id = request.json.get("concert_id", None)
+        concert_id = "fcbeba79-7bfe-4648-83d8-552ba91c274f"
         add_payment_intent(payment_intent, concert_id)
-        print("Payment received!")
+        # print(payment_intent)
+    else:
+        print("Unhandled event type {}".format(event["type"]))
 
     return jsonify({"status": "success"})
 
@@ -325,8 +383,8 @@ def get_payment_intent(concert_id):
                 "data": {"payment_intent": [pi.json() for pi in payment_intent]},
             }
         )
-    return jsonify({"code": 404, "message": "There are no payment intents."}), 404
+    return jsonify({"code": 404, "message": "There are no payment intents."})
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=PORT, debug=True)
+    app.run(host="0.0.0.0", port=5006, debug=True)

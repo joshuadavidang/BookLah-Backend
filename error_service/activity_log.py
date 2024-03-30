@@ -1,4 +1,4 @@
-import error_service.amqp_setup as amqp_setup
+import amqp_connection
 import json
 import pika
 
@@ -33,7 +33,7 @@ def processBookingLog(booking):
 
 if __name__ == "__main__":
     print("activity_log: Getting Connection")
-    connection = amqp_setup.create_connection()
+    connection = amqp_connection.create_connection()
     print("activity_log: Connection established successfully")
     channel = connection.channel()
     receiveBookingLog(channel)

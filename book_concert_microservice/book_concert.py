@@ -9,7 +9,7 @@ load_dotenv()
 
 import pika
 import json
-import amqp_setup
+import amqp_connection
 
 app = Flask(__name__)
 CORS(app)
@@ -20,12 +20,14 @@ notification_URL = "http://localhost:5003/api/v1/send_email"
 activity_log_URL = "http://localhost:5004/api/v1/activity_log"
 error_URL = "http://localhost:5005/api/v1/error"
 
-exchangename = environ.get("EXCHANGE_NAME")
-exchangetype = environ.get("EXCHANGE_TYPE")
-connection = amqp_setup.create_connection()
+# exchangename = environ.get("EXCHANGE_NAME")
+# exchangetype = environ.get("EXCHANGE_TYPE")
+exchangename = "booking_topic"
+exchangetype = "topic"
+connection = amqp_connection.create_connection()
 channel = connection.channel()
 
-if not amqp_setup.check_exchange(channel, exchangename, exchangetype):
+if not amqp_connection.check_exchange(channel, exchangename, exchangetype):
     print(
         "\nCreate the 'Exchange' before running this microservice. \nExiting the program."
     )
