@@ -371,7 +371,7 @@ def updateConcertDetails(concert_id):
     
 #####START OF FUNCTIONS RELATED TO SEATS TABLE#####
 @app.route("/seats")
-def get_all():
+def getSeats():
     seats_list = db.session.scalars(db.select(Seats)).all()
 
     if len(seats_list):
@@ -382,7 +382,7 @@ def get_all():
 
 
 @app.route("/seats/<string:concert_id>/<string:category>/<string:seat_number>")
-def find_by_seat(concert_id, category, seat_number):
+def findBySeat(concert_id, category, seat_number):
     seat = db.session.scalars(db.select(Seats).filter_by(concert_id=concert_id, category=category, seat_number=seat_number).limit(1)).first()
     if seat:
         return jsonify({"code": 200, "data": seat.json()})
@@ -390,7 +390,7 @@ def find_by_seat(concert_id, category, seat_number):
 
 
 @app.route("/seats/<string:concert_id>/<string:category>/<string:seat_number>", methods=["POST"])
-def create_tracking(concert_id, category, seat_number):
+def createSeat(concert_id, category, seat_number):
     existing_record = db.session.scalars(db.select(Seats).filter_by(concert_id=concert_id, category=category, seat_number=seat_number).limit(1)).first()
 
     if existing_record:
@@ -439,7 +439,7 @@ def create_tracking(concert_id, category, seat_number):
     return jsonify({"code": 201, "data": seat.json()}), 201
 
 @app.route("/seats/<string:concert_id>/<string:category>/<string:seat_number>", methods=["POST"])
-def update_seat(concert_id, category, seat_number):
+def updateSeat(concert_id, category, seat_number):
     try:
         seats = db.session.scalars(db.select(Seats).filter_by(concert_id=concert_id, category=category, seat_number=seat_number).limit(1)).first()
 
@@ -487,7 +487,7 @@ def update_seat(concert_id, category, seat_number):
     
 #####START OF FUNCTIONS RELATED TO TRACKING TABLE#####
 @app.route("/api/v1/tracking")
-def get_all():
+def getTracking():
     tracking_list = db.session.scalars(db.select(ConcertTracking)).all()
 
     if len(tracking_list):
@@ -501,7 +501,7 @@ def get_all():
 
 
 @app.route("/api/v1/tracking/<string:concert_id>/<string:category>")
-def find_by_concertID(concert_id, category):
+def findByConcertid(concert_id, category):
     concertTracking = db.session.scalars(
         db.select(ConcertTracking).filter_by(concert_id = concert_id, category = category).limit(1)).first()
 
@@ -511,7 +511,7 @@ def find_by_concertID(concert_id, category):
 
 
 @app.route("/tracking/<string:concert_id>/<string:category>", methods=["POST"])
-def create_tracking(concert_id, category):
+def createTracking(concert_id, category):
 
     concert_id = request.json.get('concert_id', None)
     category = request.json.get('category', None)
@@ -536,7 +536,7 @@ def create_tracking(concert_id, category):
     ), 201
 
 @app.route("/tracking/<string:concert_id>/<string:category>", methods=['PUT'])
-def update_availseats(concert_id, category):
+def updateTakenSeats(concert_id, category):
     try:
         tracking = db.session.scalars(
         db.select(ConcertTracking).filter_by(concert_id=concert_id, category= category).
