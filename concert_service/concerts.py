@@ -81,7 +81,7 @@ class Concert(db.Model):
 class Seats(db.Model):
         __tablename__ = "seats"
 
-        concert_id = db.Column(db.Integer, nullable=False)
+        concert_id = db.Column(db.String(50), nullable=False)
         category = db.Column(db.Integer, nullable=False)
         seat_number = db.Column(db.Integer, nullable=False)
         taken = db.Column(db.Boolean, nullable=False)
@@ -105,7 +105,7 @@ class Seats(db.Model):
 #table containing the total number of seats being taken up
 class ConcertTracking(db.Model):
     __tablename__ = "tracking"
-    concert_id = db.Column(db.Integer, primary_key=True)
+    concert_id = db.Column(db.String(50), nullable=False)
     category = db.Column(db.Integer, primary_key=True)
     capacity = db.Column(db.Integer, nullable=False)
     takenSeats = db.Column(db.Integer, nullable=False)

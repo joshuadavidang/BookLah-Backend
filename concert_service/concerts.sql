@@ -18,3 +18,21 @@ CREATE TABLE concert (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   created_by VARCHAR(100) NOT NULL
 );
+
+-- SQL SCRIPT TO CREATE SEATS TABLE--
+CREATE TABLE seats (
+    concert_id VARCHAR(50) NOT NULL,
+    category INT NOT NULL,
+    seat_number INT NOT NULL,
+    taken BOOLEAN NOT NULL,
+    PRIMARY KEY (concert_id, seat_number)
+);
+
+--SQL SCRIPT TO CREATE TACKING TABLE--
+CREATE TABLE tracking (
+    concert_id VARCHAR(50) NOT NULL,
+    category INT NOT NULL,
+    capacity INT NOT NULL,
+    takenSeats INT NOT NULL,
+    PRIMARY KEY (concert_id, category)
+);
