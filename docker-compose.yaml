@@ -114,22 +114,21 @@ services:
   #   depends_on:
   #     - postgres_db
 
-  # ##############################
-  # ### Simple Booking Service ###
-  # ##############################
-  # booking_service:
-  #   build: ./booking_service
-  #   container_name: booking_service
-  #   restart: always
-  #   ports:
-  #     - 5001:5001
-  #   environment:
-  #     - DATABASE_URI=${BOOKING_SERVICE_DATABASE_URI}
-  #     - PYTHONUNBUFFERED=1
-
-  #   depends_on:
-  #     - auth_service
-  #     - booking_db
+  ##############################
+  ### Simple Booking Service ###
+  ##############################
+  booking_service:
+    build: ./booking_service
+    container_name: booking_service
+    restart: always
+    ports:
+      - 5001:5001
+    environment:
+      - DATABASE_URI=${BOOKING_SERVICE_DATABASE_URI}
+      - PYTHONUNBUFFERED=1
+    # depends_on:
+    #   - auth_service
+    #   - booking_db
 
   # ##############################
   # ### Simple Concert Service ###
@@ -149,6 +148,23 @@ services:
   #     - auth_service
   #     - concert_db
 
+  ##############################
+  ### Simple Payment Service ###
+  ##############################
+  payment_service:
+    build: ./payment_service
+    container_name: payment_service
+    restart: always
+    ports:
+      - 5006:5006
+    environment:
+      - DATABASE_URI=${PAYMENT_SERVICE_DATABASE_URI}
+      - STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - PYTHONUNBUFFERED=1
+    # depends_on:
+    #   - auth_service
+
   # ###################################
   # ### Simple Notification Service ###
   # ###################################
@@ -165,23 +181,6 @@ services:
   #   depends_on:
   #     - rabbitmq
   #     - auth_service
-
-  ##############################
-  ### Simple Payment Service ###
-  ##############################
-  payment_service:
-    build: ./payment_service
-    container_name: payment_service
-    restart: always
-    ports:
-      - 5006:5006
-    environment:
-      - DATABASE_URI=mysql+mysqlconnector://root:root@host.docker.internal:8889/esd_proj
-      - STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY}
-      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
-      - PYTHONUNBUFFERED=1
-    # depends_on:
-    #   - auth_service
 
   # ############################
   # ### Simple Forum Service ###
