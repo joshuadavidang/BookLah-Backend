@@ -298,12 +298,9 @@ def add_stripeids(concert_id, category):
             400,
         )
 
-    # data = request.get_json()
-    # concert_name = data["name"]
-    # price = data["price"]
-
-    concert_name = "PLEASE"
-    price = 1000
+    data = request.get_json()
+    concert_name = data["name"]
+    price = data["price"]
 
     stripeids = create_stripeids(concert_name, price)
 
