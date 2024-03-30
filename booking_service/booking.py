@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 import uuid
 from dbConfig import app, db, PORT
 
-######## 3 ENDPOINTS ########
+######## 4 ENDPOINTS ########
 
 # /api/v1/get_bookings
 # /api/v1/get_booking/<string:booking_id>
@@ -25,6 +25,7 @@ class Booking(db.Model):
     )  # Change to String type for storing array of seat numbers
     quantity = db.Column(db.Integer, nullable=False)
     email = db.Column(db.String(50), nullable=False)
+    forum_created = db.Column(db.Boolean, default=True, nullable=False)
 
     def json(self):
         return {
@@ -36,6 +37,7 @@ class Booking(db.Model):
             "seat_no": self.seat_no.split(","),
             "quantity": self.quantity,
             "email": self.email,
+            "forum_created": self.forum_created,  
         }
 
 
@@ -104,9 +106,6 @@ def create_booking():
             500,
         )
     
-
-
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT, debug=True)
