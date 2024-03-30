@@ -46,7 +46,7 @@ class StripeIds(db.Model):
 class PaymentIntent(db.Model):
     __tablename__ = "payment_intent"
     payment_intent = db.Column(db.String(100), primary_key=True)
-    concert_id = db.Column(UUID(as_uuid=True), nullable=False)
+    concert_id = db.Column(db.String(100), nullable=False)
 
     def json(self):
         return {
@@ -61,7 +61,7 @@ def get_config():
 
 
 ##STRIPE IDS
-@app.route("/payment/get_stripeids/<string:concert_id>/<string:category>")
+@app.route("/api/v1/get_stripeids/<string:concert_id>/<string:category>")
 def get_stripeids(concert_id, category):
 
     # return (concert_id, type(concert_id))
@@ -153,6 +153,7 @@ def webhook_recieved():
 
 
 ## PAYMENT INTENT DB
+@app.route("/api/v1/add_payment_intent/<string:payment_intent>/<string:concert_id>", methods=["POST"])
 def add_payment_intent(payment_intent, concert_id):
     if db.session.scalars(
         db.select(PaymentIntent).filter_by(payment_intent=payment_intent).limit(1)
@@ -186,8 +187,7 @@ def add_payment_intent(payment_intent, concert_id):
                     },
                     "message": "An error occurred adding the Payment Intent.",
                 }
-            ),
-            500,
+            )
         )
 
     return (
@@ -197,8 +197,7 @@ def add_payment_intent(payment_intent, concert_id):
                 "data": payment_intent_db.json(),
                 "message": "Payment Intent have been added successfully",
             }
-        ),
-        201,
+        )
     )
 
 

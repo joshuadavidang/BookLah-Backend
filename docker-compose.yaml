@@ -24,8 +24,8 @@ services:
       POSTGRES_USER: kong
       POSTGRES_PASSWORD: password
     ports:
-      - "5433:5432"
-      # - "5432:5432"
+      # - "5433:5432"
+      - "5432:5432"
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "kong"]
       interval: 10s
@@ -176,7 +176,7 @@ services:
     ports:
       - 5006:5006
     environment:
-      - DATABASE_URI=${PAYMENT_SERVICE_DATABASE_URI}
+      - DATABASE_URI=mysql+mysqlconnector://root:root@host.docker.internal:8889/esd_proj
       - STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
       - PYTHONUNBUFFERED=1
