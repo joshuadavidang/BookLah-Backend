@@ -15,15 +15,14 @@ class Booking(db.Model):
     booking_id = db.Column(
         db.String(50), primary_key=True, default=lambda: str(uuid.uuid4())
     )
-    user_id = db.Column(db.String(50), nullable=False)
-    concert_id = db.Column(db.String(50), nullable=False)
+    user_id = db.Column(db.String(100), nullable=False)
+    concert_id = db.Column(db.String(100), nullable=False)
     price = db.Column(db.Integer, nullable=False)
     cat_no = db.Column(db.String, nullable=False)
-    seat_no = db.Column(
-        db.String(255), nullable=False
-    )  # Change to String type for storing array of seat numbers
+    seat_no = db.Column(db.String(100), nullable=False)
     quantity = db.Column(db.Integer, nullable=False)
-    email = db.Column(db.String(50), nullable=False)
+    email = db.Column(db.String(100), nullable=False)
+    forum_joined = db.Column(db.BOOLEAN, nullable=False, default=True)
 
     def json(self):
         return {
@@ -102,9 +101,6 @@ def create_booking():
             ),
             500,
         )
-    
-
-
 
 
 if __name__ == "__main__":
