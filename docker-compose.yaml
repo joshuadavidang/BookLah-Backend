@@ -217,7 +217,7 @@ services:
   #########################################
   activity_log:
     build:
-      context: ./error_service
+      context: ./activity_log_service
       dockerfile: activity_log.Dockerfile
     container_name: activity_log_service
     restart: always

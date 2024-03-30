@@ -6,7 +6,7 @@ from invokes import invoke_http
 
 import pika
 import json
-import cancel_booking_microservice.amqp_connection as amqp_connection
+import amqp_connection
 
 app = Flask(__name__)
 CORS(app)
