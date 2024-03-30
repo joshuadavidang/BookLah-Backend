@@ -164,9 +164,9 @@ services:
     # depends_on:
     #   - auth_service
 
-  ####################################
-  #### Simple Notification Service ###
-  ####################################
+  # ###################################
+  # ### Simple Notification Service ###
+  # ###################################
   notification_service:
     build: ./notification_service
     container_name: notification_service
