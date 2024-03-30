@@ -5,4 +5,5 @@ RUN python3 -m pip install --no-cache-dir -r requirements.txt
 COPY ./amqp_setup.py .
 COPY ./forum_complex.py .
 COPY ./invokes.py .
-CMD [ "python3", "./amqp_setup.py", "./forum_complex.py" ]
+RUN ./amqp_setup.py
+CMD [ "python3", "./forum_complex.py" ]
