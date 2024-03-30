@@ -13,17 +13,17 @@ load_dotenv()
 
 import pika
 import json
-import amqp_setup
+import amqp_connection
 
-booking_URL = "http://localhost:5001/api/v1/get_user_bookings/"
-forum_URL = "http://localhost:5007/api/v1/getForum/"
+booking_URL = "http://booking_service:5001/api/v1/get_user_bookings/"
+forum_URL = "http://forum_service:5007/api/v1/getForum/"
 
 
 # exchangename = environ.get("EXCHANGE_NAME")
 # exchangetype = environ.get("EXCHANGE_TYPE")
 exchangename = "forum_topic"
 exchangetype = "topic"
-connection = amqp_setup.create_connection()
+connection = amqp_connection.create_connection()
 channel = connection.channel()
 
 if not amqp_connection.check_exchange(channel, exchangename, exchangetype):
@@ -67,12 +67,11 @@ def get_forum():
             print(ex_str)
 
             return jsonify(
-                    {
-                        "code": 500,
-                        "message": "forum_complex.py internal error: " + ex_str,
-                    }
-                )
-            
+                {
+                    "code": 500,
+                    "message": "forum_complex.py internal error: " + ex_str,
+                }
+            )
 
     # if reached here, not a JSON request.
     return (
@@ -111,20 +110,20 @@ def processGetForum(booking):
                         "message": "Booking microservice failed to retrieve concert ID.",
                     }
                 ),
+            
         else:
             print(
                 "\n\n-----Publishing the (booking info) message with routing_key=forum.info-----"
             )
             channel.basic_publish(
-                exchange=exchangename, routing_key="forum.info", body="Bookings obtained succesfully"
+                exchange=exchangename,
+                routing_key="forum.info",
+                body="Bookings obtained succesfully",
             )
-            
-    
+
         # Invoke forum microservice to get forum based on concert ID
         print("\n-----Invoking forum microservice to get forum-----")
-        forum_result = invoke_http(
-            forum_URL + user_id, method="GET"
-        )
+        forum_result = invoke_http(forum_URL + user_id, method="GET")
         print("forum_result", forum_result)
 
         # Check the forum result; if a failure, publish error to error microservice and return the error
@@ -155,7 +154,9 @@ def processGetForum(booking):
                 "\n\n-----Publishing the (booking info) message with routing_key=forum.info-----"
             )
             channel.basic_publish(
-                exchange=exchangename, routing_key="forum.info", body="forums obtained successfully"
+                exchange=exchangename,
+                routing_key="forum.info",
+                body="forums obtained successfully",
             )
 
         return forum_result

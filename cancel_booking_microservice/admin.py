@@ -6,28 +6,28 @@ from invokes import invoke_http
 
 import pika
 import json
-import amqp_setup
+import amqp_connection
 
 app = Flask(__name__)
 CORS(app)
 
-booking_URL = "http://localhost:5001/api/v1/get_bookings"
-update_concert_URL = "http://localhost:5002/api/v1/updateConcertAvailability/"
-notification_URL = "http://localhost:5003/api/v1/send_email"
-activity_log_URL = "http://localhost:5004/api/v1/activity_log"
-error_URL = "http://localhost:5005/api/v1/error"
-payment_URL = "http://localhost:5006/api/v1/refund/"
+booking_URL = "http://booking_service:5001/api/v1/get_bookings"
+update_concert_URL = "http://concert_service:5002/api/v1/updateConcertAvailability/"
+notification_URL = "http://notification_service:5003/api/v1/send_email"
+activity_log_URL = "http://activity_log_service:5004/api/v1/activity_log"
+error_URL = "http://error_service:5005/api/v1/error"
+payment_URL = "http://payment_service:5006/api/v1/refund/"
 
 
 exchangename = "order_topic"  # exchange name
 exchangetype = "topic"  # use a 'topic' exchange to enable interaction
 
-connection = amqp_setup.create_connection()
+connection = amqp_connection.create_connection()
 channel = connection.channel()
 
 
 # if the exchange is not yet created, exit the program
-if not amqp_setup.check_exchange(channel, exchangename, exchangetype):
+if not amqp_connection.check_exchange(channel, exchangename, exchangetype):
     print(
         "\nCreate the 'Exchange' before running this microservice. \nExiting the program."
     )
@@ -121,7 +121,8 @@ def process_cancel_concert(user_booking, concert_id):
         print("\n-----Notifying ticket holders-----")
         data = {
             "recipient_email": user_booking["email"],
-            "message": "Concert cancelled",
+            "subject": "[Alert]",
+            "message": "Order has been cancelled",
         }
 
         notification_result = invoke_http(notification_URL, method="POST", json=data)

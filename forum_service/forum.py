@@ -23,13 +23,13 @@ class Forums(db.Model):
         return {
             "concert_id": self.concert_id,
             "concert_name": self.concert_name,
-            "user_id": self.user_id
+            "user_id": self.user_id,
         }
 
 
 class Posts(db.Model):
     __tablename__ = "posts"
-    post_id = db.Column(UUID(as_uuid=True), primary_key=True)
+    post_id = db.Column(db.String(255), primary_key=True)
     concert_id = db.Column(
         db.String(255), db.ForeignKey("forums.concert_id"), nullable=False
     )
@@ -69,9 +69,9 @@ class Posts(db.Model):
 
 class Comments(db.Model):
     __tablename__ = "comments"
-    comment_id = db.Column(UUID(as_uuid=True), primary_key=True)
-    post_id = db.Column(UUID(as_uuid=True), ForeignKey("posts.post_id"), nullable=False)
-    user_id = db.Column(db.String(255), nullable=False)
+    comment_id = db.Column(db.String(100), primary_key=True)
+    post_id = db.Column(db.String(100), ForeignKey("posts.post_id"), nullable=False)
+    user_id = db.Column(db.String(100), nullable=False)
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.now())
     edited_at = db.Column(db.DateTime, nullable=False, default=datetime.now())
@@ -349,8 +349,11 @@ def create_forum():
     data = request.get_json()
     concert_id = data.get("concert_id")
     concert_name = data.get("concert_name")
+    user_id = data.get("user_id")
 
-    new_forum = Forums(concert_id=concert_id, concert_name=concert_name)
+    new_forum = Forums(
+        concert_id=concert_id, concert_name=concert_name, user_id=user_id
+    )
 
     try:
         db.session.add(new_forum)
@@ -363,7 +366,6 @@ def create_forum():
 
 @app.route("/api/v1/getForums", methods=["GET"])
 def get_forums():
-    
     forums = Forums.query.all()
     forum_list = [forum.json() for forum in forums]
     return jsonify({"code": 200, "data": forum_list}), 200
@@ -376,7 +378,6 @@ def get_forum_by_userId(user_id):
     print(filtered_forums)
     filtered_forums_json = [forum.json() for forum in filtered_forums]
     print(filtered_forums_json)
-    
     if filtered_forums:
         return jsonify({"code": 200, "data": filtered_forums_json}), 200
     else:
