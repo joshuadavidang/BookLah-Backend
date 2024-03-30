@@ -4,15 +4,15 @@ import os, sys
 from os import environ
 from dotenv import load_dotenv
 from invokes import invoke_http
-
-load_dotenv()
-
 import pika
 import json
 import amqp_connection
 
+load_dotenv()
+
 app = Flask(__name__)
 CORS(app)
+PORT = 5100
 
 booking_URL = "http://booking_service:5001/api/v1/create_booking"
 concert_URL = "http://concert_service:5002/api/v1/isConcertSoldOut/"
@@ -121,7 +121,7 @@ def processBookConcert(booking):
 
     concert_id = booking_result["data"]["concert_id"]
 
-    print("\n\n-----Invoking event microservice-----")
+    print("\n\n-----Invoking concert microservice-----")
     concert_result = invoke_http(concert_URL + str(concert_id), method="GET")
     print("concert_result:", concert_result, "\n")
 
@@ -192,7 +192,7 @@ def processBookConcert(booking):
         channel.basic_publish(
             exchange=exchangename, routing_key="notification.info", body=message
         )
-    print("\nNotification published to localhost Exchange.\n")
+    print("\nNotification published to Exchange.\n")
 
     print("###### Booking Successful ######\n")
 
@@ -205,4 +205,4 @@ def processBookConcert(booking):
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5100, debug=True)
+    app.run(host="0.0.0.0", port=PORT, debug=True)
