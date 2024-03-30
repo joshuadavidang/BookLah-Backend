@@ -43,9 +43,6 @@ def get_forum():
             booking = request.get_json()
             print("\nReceived an order in JSON:", booking)
             
-
-            # do the actual work
-            # 1. Get forum based on userID
             result = processGetForum(booking)
             print("\n------------------------")
             print("\nresult: ", result)
@@ -89,8 +86,9 @@ def processGetForum(booking):
         user_id = booking["user_id"]
         print(booking_URL + user_id)
         booking_result = invoke_http(booking_URL + user_id, method="GET", json=booking)
-        print(booking)
-        print("booking_result:", booking_result)
+        filtered_bookings = [booking for booking in booking_result["data"]["bookings"] if booking["forum_joined"]]
+        
+        print("booking_result:", filtered_bookings)
 
         # Check the booking result; if a failure, publish error to error microservice and return the error
         booking_code = booking_result["code"]
@@ -120,7 +118,8 @@ def processGetForum(booking):
                 routing_key="forum.info",
                 body="Bookings obtained succesfully",
             )
-
+        # Filter the bookings where forum_joined is true
+        
         # Invoke forum microservice to get forum based on concert ID
         print("\n-----Invoking forum microservice to get forum-----")
         forum_result = invoke_http(forum_URL + user_id, method="GET")
