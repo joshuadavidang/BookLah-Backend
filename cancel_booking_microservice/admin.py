@@ -8,7 +8,7 @@ import json
 import amqp_connection
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, supports_credentials=True)
 PORT = 5200
 
 booking_URL = "http://booking_service:5001/api/v1/get_bookings"

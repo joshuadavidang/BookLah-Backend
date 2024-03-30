@@ -12,7 +12,7 @@ import amqp_connection
 
 load_dotenv()
 app = Flask(__name__)
-CORS(app)
+CORS(app, supports_credentials=True)
 PORT = 5300
 
 booking_URL = "http://booking_service:5001/api/v1/get_user_bookings/"
