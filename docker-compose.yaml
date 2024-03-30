@@ -132,20 +132,20 @@ services:
   # ##############################
   # ### Simple Concert Service ###
   # ##############################
-  # concert_service:
-  #   build: ./concert_service
-  #   container_name: concert_service
-  #   restart: always
-  #   ports:
-  #     - 5002:5002
-  #   environment:
-  #     - DATABASE_URI=${CONCERT_SERVICE_DATABASE_URI}
-  #     - STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY}
-  #     - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
-  #     - PYTHONUNBUFFERED=1
-  #   depends_on:
-  #     - auth_service
-  #     - concert_db
+  concert_service:
+    build: ./concert_service
+    container_name: concert_service
+    restart: always
+    ports:
+      - 5002:5002
+    environment:
+      - DATABASE_URI=${CONCERT_SERVICE_DATABASE_URI}
+      - STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - PYTHONUNBUFFERED=1
+    # depends_on:
+    #   - auth_service
+    #   - concert_db
 
   ##############################
   ### Simple Payment Service ###
@@ -167,35 +167,35 @@ services:
   # ###################################
   # ### Simple Notification Service ###
   # ###################################
-  # notification_service:
-  #   build: ./notification_service
-  #   container_name: notification_service
-  #   restart: always
-  #   ports:
-  #     - 5003:5003
-  #   environment:
-  #     - MAILTRAP_API_KEY=${MAILTRAP_API_KEY}
-  #     # rabbitMQ: "amqp://rabbitmq:5672"
-  #     - PYTHONUNBUFFERED=1
-  #   depends_on:
-  #     - rabbitmq
-  #     - auth_service
+  notification_service:
+    build: ./notification_service
+    container_name: notification_service
+    restart: always
+    ports:
+      - 5003:5003
+    environment:
+      - MAILTRAP_API_KEY=${MAILTRAP_API_KEY}
+      # rabbitMQ: "amqp://rabbitmq:5672"
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - rabbitmq
+      # - auth_service
 
   # ############################
   # ### Simple Forum Service ###
   # ############################
-  # forum_service:
-  #   build: ./forum_service
-  #   container_name: forum_service
-  #   restart: always
-  #   ports:
-  #     - 5007:5007
-  #   environment:
-  #     - DATABASE_URI=${FORUM_SERVICE_DATABASE_URI}
-  #     - PYTHONUNBUFFERED=1
-  #   depends_on:
-  #     - auth_service
-  #     - forum_db
+  forum_service:
+    build: ./forum_service
+    container_name: forum_service
+    restart: always
+    ports:
+      - 5007:5007
+    environment:
+      - DATABASE_URI=${FORUM_SERVICE_DATABASE_URI}
+      - PYTHONUNBUFFERED=1
+    #depends_on:
+    # - auth_service
+    # - forum_db
 
   ################
   ### RabbitMQ ###
@@ -256,8 +256,8 @@ services:
     ports:
       - 5100:5100
     environment:
-      - EXCHANGE_NAME=${EXCHANGE_NAME}
-      - EXCHANGE_TYPE=${EXCHANGE_TYPE}
+      - EXCHANGE_NAME=${EXCHANGE_NAME_BOOK_CONCERT}
+      - EXCHANGE_TYPE=${EXCHANGE_TYPE_BOOK_CONCERT}
       - PYTHONUNBUFFERED=1
       - rabbit_host=rabbitmq
       - rabbit_port=5672
@@ -273,46 +273,46 @@ services:
   # ####################################
   # ### Cancel Booking Complex Service ###
   # ####################################
-  # cancel_booking_microservice:
-  #   build: ./cancel_booking_microservice
-  #   container_name: cancel_booking_microservice
-  #   restart: always
-  #   ports:
-  #     - 5200:5200
-  #   environment:
-  #     - EXCHANGE_NAME=${EXCHANGE_NAME}
-  #     - EXCHANGE_TYPE=${EXCHANGE_TYPE}
-  #     - PYTHONUNBUFFERED=1
-  #     # - rabbit_host: rabbitmq
-  #     # - rabbit_port: 5672
-  #   depends_on:
-  #     - rabbitmq
-  #     - auth_service
-  #     - concert_service
-  #     - booking_service
-  #     - payment_service
-  #     - notification_service
-  #     - activity_log
-  #     - error
+  cancel_booking_microservice:
+    build: ./cancel_booking_microservice
+    container_name: cancel_booking_microservice
+    restart: always
+    ports:
+      - 5200:5200
+    environment:
+      - EXCHANGE_NAME=${EXCHANGE_NAME_CANCEL_BOOKING}
+      - EXCHANGE_TYPE=${EXCHANGE_TYPE_CANCEL_BOOKING}
+      - PYTHONUNBUFFERED=1
+      # - rabbit_host: rabbitmq
+      # - rabbit_port: 5672
+    depends_on:
+      - rabbitmq
+      #- auth_service
+      - concert_service
+      - booking_service
+      - payment_service
+      - notification_service
+      - activity_log
+      - error
 
   # ####################################
   # ### Forum Complex Service ###
   # ####################################
   get_forum_microservice:
-    build: ./forum_complex
-    container_name: forum_complex
+    build: ./forum_complex_microservice
+    container_name: forum_complex_microservice
     restart: always
     ports:
       - 5300:5300
     environment:
-      - EXCHANGE_NAME=${EXCHANGE_NAME}
-      - EXCHANGE_TYPE=${EXCHANGE_TYPE}
+      - EXCHANGE_NAME=${EXCHANGE_NAME_FORUM}
+      - EXCHANGE_TYPE=${EXCHANGE_TYPE_FORUM}
       - PYTHONUNBUFFERED=1
       - rabbit_host=rabbitmq
       - rabbit_port=5672
     depends_on:
       - rabbitmq
-      - auth_service
+      #- auth_service
       - forum_service
       - booking_service
       - activity_log

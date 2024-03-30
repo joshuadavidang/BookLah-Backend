@@ -4,7 +4,7 @@ import os, sys
 from os import environ
 from dotenv import load_dotenv
 from invokes import invoke_http
-import amqp_setup
+import amqp_connection
 
 app = Flask(__name__)
 CORS(app)
@@ -13,7 +13,7 @@ load_dotenv()
 
 import pika
 import json
-import error_service.amqp_setup as amqp_setup
+import amqp_connection
 
 booking_URL = "http://localhost:5001/api/v1/get_user_bookings/"
 forum_URL = "http://localhost:5007/api/v1/getForum/"
@@ -23,10 +23,10 @@ forum_URL = "http://localhost:5007/api/v1/getForum/"
 # exchangetype = environ.get("EXCHANGE_TYPE")
 exchangename = "forum_topic"
 exchangetype = "topic"
-connection = amqp_setup.create_connection()
+connection = amqp_connection.create_connection()
 channel = connection.channel()
 
-if not amqp_setup.check_exchange(channel, exchangename, exchangetype):
+if not amqp_connection.check_exchange(channel, exchangename, exchangetype):
     print(
         "\nCreate the 'Exchange' before running this microservice. \nExiting the program."
     )

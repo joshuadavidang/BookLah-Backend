@@ -6,7 +6,7 @@ from invokes import invoke_http
 
 import pika
 import json
-import amqp_setup
+import cancel_booking_microservice.amqp_connection as amqp_connection
 
 app = Flask(__name__)
 CORS(app)
@@ -22,12 +22,12 @@ payment_URL = "http://localhost:5006/api/v1/refund/"
 exchangename = "order_topic"  # exchange name
 exchangetype = "topic"  # use a 'topic' exchange to enable interaction
 
-connection = amqp_setup.create_connection()
+connection = amqp_connection.create_connection()
 channel = connection.channel()
 
 
 # if the exchange is not yet created, exit the program
-if not amqp_setup.check_exchange(channel, exchangename, exchangetype):
+if not amqp_connection.check_exchange(channel, exchangename, exchangetype):
     print(
         "\nCreate the 'Exchange' before running this microservice. \nExiting the program."
     )
@@ -110,7 +110,6 @@ def process_cancel_concert(user_booking, concert_id):
             update_concert_URL + user_booking["concert_id"], method="PUT", json=data
         )
         print("cancel_concert_result:", cancel_concert_result)
-
 
         print("\n-----Triggering refunds-----")
         payment_result = invoke_http(
