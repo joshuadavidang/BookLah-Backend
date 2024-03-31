@@ -13,7 +13,7 @@ from dbConfig import app, db, PORT
 class Booking(db.Model):
     __tablename__ = "booking"
     booking_id = db.Column(
-        db.String(50), primary_key=True, default=lambda: str(uuid.uuid4())
+        db.String(100), primary_key=True, default=lambda: str(uuid.uuid4())
     )
     user_id = db.Column(db.String(100), nullable=False)
     concert_id = db.Column(db.String(100), nullable=False)
@@ -34,6 +34,7 @@ class Booking(db.Model):
             "seat_no": self.seat_no.split(","),
             "quantity": self.quantity,
             "email": self.email,
+            "forum_joined": self.forum_joined,
         }
 
 
