@@ -370,7 +370,7 @@ def updateConcertDetails(concert_id):
 #####END OF FUNCTIONS FOR CONCERT TABLE#####
     
 #####START OF FUNCTIONS RELATED TO SEATS TABLE#####
-@app.route("/seats")
+@app.route("/api/v1/getSeats")
 def getSeats():
     seats_list = db.session.scalars(db.select(Seats)).all()
 
@@ -381,7 +381,7 @@ def getSeats():
     return jsonify({"code": 404, "message": "There are no seats."}), 404
 
 
-@app.route("/seats/<string:concert_id>/<string:category>/<string:seat_number>")
+@app.route("/api/v1/findBySeat/<string:concert_id>/<string:category>/<string:seat_number>")
 def findBySeat(concert_id, category, seat_number):
     seat = db.session.scalars(db.select(Seats).filter_by(concert_id=concert_id, category=category, seat_number=seat_number).limit(1)).first()
     if seat:
@@ -389,7 +389,7 @@ def findBySeat(concert_id, category, seat_number):
     return jsonify({"code": 404, "message": "Seat not found."}), 404
 
 
-@app.route("/seats/<string:concert_id>/<string:category>/<string:seat_number>", methods=["POST"])
+@app.route("/api/v1/createSeat/<string:concert_id>/<string:category>/<string:seat_number>", methods=["POST"])
 def createSeat(concert_id, category, seat_number):
     existing_record = db.session.scalars(db.select(Seats).filter_by(concert_id=concert_id, category=category, seat_number=seat_number).limit(1)).first()
 
@@ -447,7 +447,7 @@ def createSeat(concert_id, category, seat_number):
 
     return jsonify({"code": 201, "data": seat.json()}), 201
 
-@app.route("/seats/<string:concert_id>/<string:category>/<string:seat_number>", methods=["POST"])
+@app.route("/api/v1/updateSeat/<string:concert_id>/<string:category>/<string:seat_number>", methods=["POST"])
 def updateSeat(concert_id, category, seat_number):
     try:
         # seats = db.session.scalars(db.select(Seats).filter_by(concert_id=concert_id, category=category, seat_number=seat_number).limit(1)).first()
@@ -524,7 +524,7 @@ def updateSeat(concert_id, category, seat_number):
 #####END OF FUNCTIONS RELATED TO SEATS TABLE#####
     
 #####START OF FUNCTIONS RELATED TO TRACKING TABLE#####
-@app.route("/api/v1/tracking")
+@app.route("/api/v1/getTracking")
 def getTracking():
     tracking_list = db.session.scalars(db.select(ConcertTracking)).all()
 
@@ -538,7 +538,7 @@ def getTracking():
     return jsonify({"code": 404, "message": "There are no concert tracking records."}), 404
 
 
-@app.route("/api/v1/tracking/<string:concert_id>/<string:category>")
+@app.route("/api/v1/findByConcertid/<string:concert_id>/<string:category>")
 def findByConcertid(concert_id, category):
     concertTracking = db.session.scalars(
         db.select(ConcertTracking).filter_by(concert_id = concert_id, category = category).limit(1)).first()
@@ -548,7 +548,7 @@ def findByConcertid(concert_id, category):
     return jsonify({"code": 404, "message": "Concert tracking not found."}), 404
 
 
-@app.route("/tracking/<string:concert_id>/<string:category>", methods=["POST"])
+@app.route("/api/v1/createTracking/<string:concert_id>/<string:category>", methods=["POST"])
 def createTracking(concert_id, category):
 
     concert_id = request.json.get('concert_id', None)
@@ -573,7 +573,7 @@ def createTracking(concert_id, category):
         }
     ), 201
 
-@app.route("/tracking/<string:concert_id>/<string:category>", methods=['PUT'])
+@app.route("/api/v1/updateTakenSeats/<string:concert_id>/<string:category>", methods=['PUT'])
 def updateTakenSeats(concert_id, category):
     try:
         tracking = db.session.scalars(
