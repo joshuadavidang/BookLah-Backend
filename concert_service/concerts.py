@@ -475,8 +475,8 @@ def createSeats(concert_id, category, number_of_seats):
 
     return jsonify({"code": 201, "data": [seat.json() for seat in seats]}), 201
 
-@app.route("/api/v1/updateSeat/<string:concert_id>/<string:category>/<string:seat_number>", methods=["PUT"])
-def updateSeat(concert_id, category, seat_number):
+@app.route("/api/v1/updateSeats/<string:concert_id>/<string:category>/<string:seat_number>", methods=["PUT"])
+def updateSeats(concert_id, category, seat_number):
     try:
         # seats = db.session.scalars(db.select(Seats).filter_by(concert_id=concert_id, category=category, seat_number=seat_number).limit(1)).first()
 
@@ -602,7 +602,7 @@ def createTracking(concert_id, category):
     ), 201
 
 @app.route("/api/v1/updateNumTakenSeats/<string:concert_id>/<string:category>", methods=['PUT'])
-def updateNumTakenSeats(concert_id, category):
+def updateNumTakenSeats(concert_id, category, seat_numbers):
     try:
         tracking = db.session.scalars(
         db.select(ConcertTracking).filter_by(concert_id=concert_id, category= category).
@@ -621,8 +621,10 @@ def updateNumTakenSeats(concert_id, category):
 
         data = request.get_json()
         if 'takenSeats' in data:
+            list_seat_numbers=seat_numbers.split(',')
+            num_seats_taken=len(list_seat_numbers)
             current_taken_seats = ConcertTracking.query.first().takenSeats
-            new_taken_seats = current_taken_seats + 1
+            new_taken_seats = current_taken_seats + num_seats_taken
             ConcertTracking.takenSeats = new_taken_seats
             db.session.commit()
             return jsonify(
