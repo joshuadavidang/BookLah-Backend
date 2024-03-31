@@ -486,7 +486,7 @@ def updateSeat(concert_id, category, seat_number):
         for seat_number in seat_numbers_list:
             seat = db.session.scalars(db.select(Seats).filter_by(concert_id=concert_id, category=category, seat_number=seat_number).limit(1)).first()
 
-            if not seats:
+            if not seat:
                 return jsonify(
                     {
                         "code": 404,
