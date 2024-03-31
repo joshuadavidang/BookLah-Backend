@@ -3,6 +3,17 @@ from dbConfig import app, db, PORT
 from datetime import datetime
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
+from flask_socketio import SocketIO
+
+socketio = SocketIO(app)
+
+@socketio.on('connect', namespace='/comments')
+def handle_connect():
+    print('Client connected')
+
+@socketio.on('disconnect', namespace='/comments')
+def handle_disconnect():
+    print('Client disconnected')
 
 
 class Forums(db.Model):
@@ -262,6 +273,9 @@ def addComment(post_id):
         db.session.add(comment)
         post.replies += 1
         db.session.commit()
+
+        socketio.emit('new_comment', {'post_id': post_id, 'comment': comment.json()}, namespace='/comments')
+
         return jsonify({"code": 201, "data": comment.json()}), 201
     except Exception as e:
         db.session.rollback()
