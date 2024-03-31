@@ -601,7 +601,7 @@ def createTracking(concert_id, category):
         }
     ), 201
 
-@app.route("/api/v1/updateNumTakenSeats/<string:concert_id>/<string:category>", methods=['PUT'])
+@app.route("/api/v1/updateNumTakenSeats/<string:concert_id>/<string:category>/<string:seat_numbers>", methods=['PUT'])
 def updateNumTakenSeats(concert_id, category, seat_numbers):
     try:
         tracking = db.session.scalars(
