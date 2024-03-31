@@ -270,6 +270,29 @@ services:
       - activity_log
       - error
 
+  #####################################
+  #### Create Concert Complex Service ###
+  #####################################
+  create_concert_microservice:
+    build: ./create_concert_microservice
+    container_name: create_concert_microservice
+    ports:
+      - 5400:5400
+    environment:
+      - EXCHANGE_NAME=${EXCHANGE_NAME_CREATE_CONCERT}
+      - EXCHANGE_TYPE=${EXCHANGE_TYPE_CREATE_CONCERT}
+      - PYTHONUNBUFFERED=1
+      - rabbit_host=rabbitmq
+      - rabbit_port=5672
+    depends_on:
+      - rabbitmq
+      # - auth_service
+      - booking_service
+      - concert_service
+      - notification_service
+      - activity_log
+      - error
+
   # #########################
   # ### Postgres Database ###
   # #########################
