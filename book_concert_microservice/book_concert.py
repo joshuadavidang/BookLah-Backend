@@ -84,7 +84,6 @@ def processBookConcert(booking):
     print("\n-----Invoking booking microservice-----")
     # takes json from frontend and creates a booking
     booking_result = invoke_http(booking_URL, method="POST", json=booking)
-    print(">>>>>>>>>>>>>>>>>>", booking_result)
     code = booking_result["code"]
     message = json.dumps(booking_result)
 
@@ -197,7 +196,6 @@ def processBookConcert(booking):
         }
 
     print("\n\n-----Invoking notification microservice-----")
-    # send email from frontend and booking details from booking
     email = booking["email"]
     data = {
         "recipient_email": email,
