@@ -250,7 +250,7 @@ services:
   ##############################
   #### Forum Complex Service ###
   ##############################
-  get_forum_microservice:
+  forum_complex_microservice:
     build: ./forum_complex_microservice
     container_name: forum_complex_microservice
     restart: always
