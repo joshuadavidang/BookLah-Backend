@@ -14,8 +14,9 @@ app = Flask(__name__)
 CORS(app, supports_credentials=True)
 PORT = 5100
 
-booking_URL = "http://booking_service:5001/api/v1/create_booking"
 concert_URL = "http://concert_service:5002/api/v1/isConcertSoldOut/"
+seat_url = "http://concert_service:5002/api/v1/updateSeat"
+booking_URL = "http://booking_service:5001/api/v1/create_booking"
 notification_URL = "http://notification_service:5003/api/v1/send_email"
 activity_log_URL = "http://activity_log_service:5004/api/v1/activity_log"
 error_URL = "http://error_service:5005/api/v1/error"
@@ -83,7 +84,7 @@ def processBookConcert(booking):
     print("\n-----Invoking booking microservice-----")
     # takes json from frontend and creates a booking
     booking_result = invoke_http(booking_URL, method="POST", json=booking)
-    print(booking_result)
+    print(">>>>>>>>>>>>>>>>>>", booking_result)
     code = booking_result["code"]
     message = json.dumps(booking_result)
 
@@ -118,6 +119,52 @@ def processBookConcert(booking):
         )
 
     print("\nBooking published to localhost Exchange.\n")
+
+    print("\n-----Invoking concert microservice to update seats-----")
+    data = {
+        "concert_id": booking["concert_id"],
+        "category": booking["cat_no"],
+        "seat_no": booking["seat_no"],
+        "is_taken": True,
+    }
+    seat_result = invoke_http(seat_url, method="PUT", json=data)
+    print(seat_result)
+    code = seat_result["code"]
+    message = json.dumps(seat_result)
+
+    if code not in range(200, 300):
+        print(
+            "\n\n-----Publishing the (seat error) message with routing_key=seat.error-----"
+        )
+        channel.basic_publish(
+            exchange=exchangename,
+            routing_key="seat.error",
+            body=message,
+            properties=pika.BasicProperties(delivery_mode=2),
+        )
+
+        print(
+            "Seat update status ({:d}) published to the localhost Exchange:".format(
+                code
+            ),
+            seat_result,
+        )
+
+        return {
+            "code": 500,
+            "data": {"seat_result": seat_result},
+            "message": "Booking creation failure sent for error handling.",
+        }
+
+    else:
+        print(
+            "\n\n-----Publishing the (seat info) message with routing_key=seat.info-----"
+        )
+        channel.basic_publish(
+            exchange=exchangename, routing_key="seat.info", body=message
+        )
+
+    print("\Seat published to localhost Exchange.\n")
 
     concert_id = booking_result["data"]["concert_id"]
 

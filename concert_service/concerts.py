@@ -3,6 +3,7 @@ from dbConfig import app, db, PORT
 from sqlalchemy import Enum
 from datetime import datetime
 from sqlalchemy.orm import relationship
+import uuid
 
 ######## 8 ENDPOINTS ########
 
@@ -25,7 +26,7 @@ class Concert(db.Model):
     time = db.Column(db.String, nullable=False)
     capacity = db.Column(db.Integer, nullable=False)
     description = db.Column(db.String(1000), nullable=False)
-    category = db.Column(db.String(100), nullable=False, default="Category 1")
+    category = db.Column(db.String(100), nullable=False, default="category1")
     sold_out = db.Column(db.Boolean, nullable=False, default=False)
     price = db.Column(db.INTEGER, nullable=False, default=0)
     concert_status = db.Column(
@@ -82,7 +83,7 @@ class Concert(db.Model):
 
 class Seats(db.Model):
     __tablename__ = "seats"
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    id = db.Column(db.String(100), primary_key=True, default=lambda: str(uuid.uuid4()))
     concert_id = db.Column(
         db.String(100), db.ForeignKey("concerts.concert_id"), nullable=False
     )
@@ -90,8 +91,7 @@ class Seats(db.Model):
     seat_no = db.Column(db.String(10), nullable=False)
     is_taken = db.Column(db.Boolean, nullable=False)
 
-    def __init__(self, id, concert_id, category, seat_no, is_taken):
-        self.id = id
+    def __init__(self, concert_id, category, seat_no, is_taken):
         self.concert_id = concert_id
         self.category = category
         self.seat_no = seat_no
@@ -99,7 +99,6 @@ class Seats(db.Model):
 
     def json(self):
         return {
-            "id": self.id,
             "concert_id": self.concert_id,
             "category": self.category,
             "seat_no": self.seat_no,
@@ -374,7 +373,6 @@ def updateConcertDetails(concert_id):
 @app.route("/api/v1/getSeats")
 def getSeats():
     seats_list = db.session.scalars(db.select(Seats)).all()
-
     if len(seats_list):
         return jsonify(
             {"code": 200, "data": {"seats": [seat.json() for seat in seats_list]}}
@@ -382,13 +380,23 @@ def getSeats():
     return jsonify({"code": 404, "message": "There are no seats."}), 404
 
 
-@app.route(
-    "/api/v1/findBySeat/<string:concert_id>/<string:category>/<string:seat_number>"
-)
-def findBySeat(concert_id, category, seat_number):
+@app.route("/api/v1/getSeatsByConcertId/<string:concert_id>")
+def getSeatsByConcertId(concert_id):
+    seats_list = db.session.scalars(db.select(Seats).filter_by(concert_id=concert_id))
+
+    if not seats_list:
+        return jsonify({"code": 404, "message": "There are no seats available."}), 404
+
+    return jsonify(
+        {"code": 200, "data": {"seats": [seat.json() for seat in seats_list]}}
+    )
+
+
+@app.route("/api/v1/findBySeat/<string:concert_id>/<string:category>/<string:seat_no>")
+def findBySeat(concert_id, category, seat_no):
     seat = db.session.scalars(
         db.select(Seats)
-        .filter_by(concert_id=concert_id, category=category, seat_number=seat_number)
+        .filter_by(concert_id=concert_id, category=category, seat_no=seat_no)
         .limit(1)
     ).first()
     if seat:
@@ -398,12 +406,10 @@ def findBySeat(concert_id, category, seat_number):
 
 @app.route(
     "/api/v1/createSeats/<string:concert_id>/<string:category>/<int:number_of_seats>",
-    methods=["POST"],
 )
 def createSeats(concert_id, category, number_of_seats):
     seat_data_list = [
         {
-            "id": i,
             "concert_id": concert_id,
             "category": category,
             "seat_no": f"A{i + 1}",
@@ -413,9 +419,6 @@ def createSeats(concert_id, category, number_of_seats):
     ]
 
     seats = [Seats(**seat_data) for seat_data in seat_data_list]
-
-    for seat_data in seat_data_list:
-        print(seat_data)
 
     try:
         db.session.add_all(seats)
@@ -430,8 +433,7 @@ def createSeats(concert_id, category, number_of_seats):
                         "category": category,
                         "number_of_seats": number_of_seats,
                     },
-                    "message": "An error occurred creating the seats.",
-                    "error": str(e),
+                    "message": f"An error occurred creating the seats. ${str(e)}",
                 }
             ),
             500,
@@ -441,96 +443,78 @@ def createSeats(concert_id, category, number_of_seats):
 
 
 @app.route(
-    "/api/v1/updateSeats/<string:concert_id>/<string:category>/<string:seat_number>",
+    "/api/v1/updateSeat",
     methods=["PUT"],
 )
-def updateSeats(concert_id, category, seat_no):
-    try:
-        seat_numbers_list = seat_number.split(",")
-        seats_to_update = []
+def updateSeat():
+    data = request.get_json()
+    concert_id = data.get("concert_id")
+    category = data.get("category")
+    seat_no = data.get("seat_no").split(",")
+    is_taken = data.get("is_taken")
 
-        for seat_number in seat_numbers_list:
-            seat = db.session.scalars(
-                db.select(Seats)
-                .filter_by(concert_id=concert_id, category=category, seat_no=seat_no)
-                .limit(1)
-            ).first()
+    updated_seats = []
 
-            if not seat:
-                return (
-                    jsonify(
-                        {
-                            "code": 404,
-                            "data": {
-                                "concert_id": concert_id,
-                                "category": category,
-                                "seat_no": seat_no,
-                            },
-                            "message": "Seat not found.",
-                        }
-                    ),
-                    404,
-                )
-
-            if seat.is_taken == True:
-                return (
-                    jsonify(
-                        {
-                            "code": 409,
-                            "data": {
-                                "concert_id": concert_id,
-                                "category": category,
-                                "seat_no": seat_no,
-                            },
-                            "message": f"Seat {seat_no} already taken.",
-                        }
-                    ),
-                    409,
-                )
-
-            seats_to_update.append(seat)
-
-            data = request.get_json()
-
-            for seat in seats_to_update:
-                seat.is_taken = True
-
-            db.session.commit()
+    for seat in seat_no:
+        print(seat)
+        seat_obj = (
+            db.session.query(Seats)
+            .filter_by(concert_id=concert_id, category=category, seat_no=seat)
+            .first()
+        )
+        if not seat_obj:
             return (
                 jsonify(
                     {
-                        "code": 200,
-                        "message": "Seat updated successfully.",
+                        "code": 404,
                         "data": {
                             "concert_id": concert_id,
                             "category": category,
-                            "seat_no": seat_no,
+                            "seat_no": seat,
                         },
+                        "message": "Seat not found.",
                     }
                 ),
-                200,
+                404,
             )
-        else:
+
+        try:
+            seat_obj.is_taken = is_taken
+            updated_seats.append(seat)
+        except Exception as e:
+            db.session.rollback()
             return (
                 jsonify(
                     {
-                        "code": 400,
-                        "message": "Invalid or missing 'taken' field in request data.",
+                        "code": 500,
+                        "data": {"is_taken": is_taken},
+                        "message": "An error occurred while updating the seat status: "
+                        + str(e),
                     }
                 ),
-                400,
+                500,
             )
+
+    try:
+        db.session.commit()
+        return (
+            jsonify(
+                {
+                    "code": 200,
+                    "data": {"updated_seats": updated_seats},
+                    "message": "Updated seat status successfully.",
+                }
+            ),
+            200,
+        )
     except Exception as e:
+        db.session.rollback()
         return (
             jsonify(
                 {
                     "code": 500,
-                    "data": {
-                        "concert_id": concert_id,
-                        "category": category,
-                        "seat_number": seat_number,
-                    },
-                    "message": "An error occurred while updating the seat. " + str(e),
+                    "data": {"is_taken": is_taken},
+                    "message": "An error occurred while committing changes: " + str(e),
                 }
             ),
             500,
@@ -596,10 +580,10 @@ def createTracking(concert_id, category):
 
 
 @app.route(
-    "/api/v1/updateNumTakenSeats/<string:concert_id>/<string:category>/<string:seat_numbers>",
+    "/api/v1/updateNumTakenSeats/<string:concert_id>/<string:category>/<string:seat_no>",
     methods=["PUT"],
 )
-def updateNumTakenSeats(concert_id, category, seat_numbers):
+def updateNumTakenSeats(concert_id, category, seat_no):
     try:
         tracking = db.session.scalars(
             db.select(ConcertTracking)
@@ -620,7 +604,7 @@ def updateNumTakenSeats(concert_id, category, seat_numbers):
 
         data = request.get_json()
         if "takenSeats" in data:
-            list_seat_numbers = seat_numbers.split(",")
+            list_seat_numbers = seat_no.split(",")
             num_seats_taken = len(list_seat_numbers)
             current_taken_seats = ConcertTracking.query.first().takenSeats
             new_taken_seats = current_taken_seats + num_seats_taken
