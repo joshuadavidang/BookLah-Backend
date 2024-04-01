@@ -102,25 +102,25 @@ services:
         strip_path: true
 
   - name: cancel_booking
-  url: http://cancel_booking_microservice:5200
-  routes:
-    - name: cancel_booking_route
-      paths: 
-        - /api/v1/cancel_concert
-      strip_path: true
+    url: http://cancel_booking_microservice:5200
+    routes:
+      - name: cancel_booking_route
+        paths: 
+          - /api/v1/cancel_concert
+        strip_path: true
 
   - name: forum_complex
-  url: http://forum_complex_microservice:5300
-  routes:
-    - name: get_forum_route
-      paths: 
-        - /api/v1/get_forum
-      strip_path: true
+    url: http://forum_complex_microservice:5300
+    routes:
+      - name: get_forum_route
+        paths: 
+          - /api/v1/get_forum
+        strip_path: true
   
-    - name: create_concert
-  url: http://create_concert_microservice:5400
-  routes:
-    - name: create_concert_route
-      paths: 
-        - /api/v1/create_concert
-      strip_path: true
+  - name: create_concert
+    url: http://create_concert_microservice:5400
+    routes:
+      - name: create_concert_route
+        paths: 
+          - /api/v1/create_concert
+        strip_path: true
