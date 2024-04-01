@@ -110,7 +110,7 @@ services:
       strip_path: true
 
   - name: forum_complex
-  url: http://get_forum_microservice:5300
+  url: http://forum_complex_microservice:5300
   routes:
     - name: get_forum_route
       paths: 
