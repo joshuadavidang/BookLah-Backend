@@ -46,19 +46,23 @@ services:
     build: ./auth_service
     container_name: auth_service
     restart: always
-    networks:
-      - kong-net
+    ports:
+      - 3001:3001
     environment:
-      KONG_DATABASE: postgres
-      KONG_PG_HOST: kong-database
-      KONG_PG_USER: kong
-      KONG_PG_PASSWORD: password
-      KONG_PROXY_ACCESS_LOG: /dev/stdout
-      KONG_ADMIN_ACCESS_LOG: /dev/stdout
-      KONG_PROXY_ERROR_LOG: /dev/stderr
-      KONG_ADMIN_ERROR_LOG: /dev/stderr
-      KONG_ADMIN_LISTEN: 0.0.0.0:8001
-      KONG_ADMIN_GUI_URL: http://localhost:8002
+      - CLIENT_PORT=${CLIENT_PORT}
+      - SERVER_PORT=${SERVER_PORT}
+      - API_VERSION=${API_VERSION}
+      - REDIRECT_URL=${REDIRECT_URL}
+      - SGID_CLIENT_ID=${SGID_CLIENT_ID}
+      - SGID_CLIENT_SECRET=${SGID_CLIENT_SECRET}
+      - SGID_PRIVATE_KEY=${SGID_PRIVATE_KEY}
+      - TYPE=${TYPE}
+      - HOST=${HOST}
+      - DB_PORT=${DB_PORT}
+      - USERNAME=${USERNAME}
+      - PASSWORD=${PASSWORD}
+      - DATABASE=${DATABASE}
+      - DOMAIN=${DOMAIN}
     depends_on:
       - postgres_db
 
@@ -77,14 +81,7 @@ services:
     # depends_on:
     #   - auth_service
     #   - booking_db
-      - PYTHONUNBUFFERED=1
-    # depends_on:
-    #   - auth_service
-    #   - booking_db
 
-  # ##############################
-  # ### Simple Concert Service ###
-  # ##############################
   # ##############################
   # ### Simple Concert Service ###
   # ##############################
@@ -96,12 +93,6 @@ services:
       - 5002:5002
     environment:
       - DATABASE_URI=${CONCERT_SERVICE_DATABASE_URI}
-      - STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY}
-      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
-      - PYTHONUNBUFFERED=1
-    # depends_on:
-    #   - auth_service
-    #   - concert_db
       - STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
       - PYTHONUNBUFFERED=1
