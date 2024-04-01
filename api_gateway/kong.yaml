@@ -39,7 +39,6 @@ services:
         paths:
           - /api/v1/updateConcertDetails/<string:concert_id>
 
-
   - name: payment_service
     url: http://payment_service:5006
     routes:
