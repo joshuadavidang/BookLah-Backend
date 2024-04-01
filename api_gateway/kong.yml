@@ -1,6 +1,10 @@
+_format_version: "2.1"
+_transform: true
+
+
 services:
   - name: auth_service
-    url: http://auth_service:3001
+    url: http://auth_service:3001/
     routes:
       - name: get_auth_url_route
         paths:
@@ -11,9 +15,10 @@ services:
       - name: save_user_info_route
         paths:
           - /api/v1/saveUserInformation
+        strip_path: true
 
   - name: concert_service
-    url: http://concert_service:5002
+    url: http://concert_service:5002/
     routes:
       - name: get_concerts_route
         paths:
@@ -38,9 +43,10 @@ services:
       - name: update_concert_details_route
         paths:
           - /api/v1/updateConcertDetails/<string:concert_id>
+        strip_path: true
 
   - name: payment_service
-    url: http://payment_service:5006
+    url: http://payment_service:5006/
     routes:
       - name: config_payment_route
         paths:
@@ -53,6 +59,7 @@ services:
       - name: create_payment_intent_route
         paths:
           - /api/v1/create_payment_intent
+        strip_path: true
 
   - name: forum_service
     url: http://forum_service:5007
@@ -76,6 +83,7 @@ services:
       - name: get_comments_route
         paths:
           - /api/v1/api/v1/getComments
+        strip_path: true
 
   - name: booking_service
     url: http://booking_service:5001
@@ -87,3 +95,4 @@ services:
       - name: get_a_booking_route
         paths:
           - /api/v1/get_booking/<string:booking_id>
+        strip_path: true
