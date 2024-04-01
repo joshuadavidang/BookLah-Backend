@@ -3,35 +3,34 @@ from flask_cors import CORS
 import os, sys
 import requests
 from invokes import invoke_http
-
 import pika
 import json
-import amqp_setup
+import amqp_connection
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, supports_credentials=True)
+PORT = 5200
 
-booking_URL = "http://localhost:5001/api/v1/get_bookings"
-update_concert_URL = "http://localhost:5002/api/v1/updateConcertAvailability/"
-notification_URL = "http://localhost:5003/api/v1/send_email"
-activity_log_URL = "http://localhost:5004/api/v1/activity_log"
-error_URL = "http://localhost:5005/api/v1/error"
-payment_URL = "http://localhost:5006/api/v1/refund/"
+booking_URL = "http://booking_service:5001/api/v1/get_bookings"
+update_concert_URL = "http://concert_service:5002/api/v1/updateConcertAvailability/"
+notification_URL = "http://notification_service:5003/api/v1/send_email"
+activity_log_URL = "http://activity_log_service:5004/api/v1/activity_log"
+error_URL = "http://error_service:5005/api/v1/error"
+payment_URL = "http://payment_service:5006/api/v1/refund/"
 
 
-exchangename = "order_topic"  # exchange name
-exchangetype = "topic"  # use a 'topic' exchange to enable interaction
+exchangename = "order_topic"
+exchangetype = "topic"
 
-connection = amqp_setup.create_connection()
+connection = amqp_connection.create_connection()
 channel = connection.channel()
 
 
-# if the exchange is not yet created, exit the program
-if not amqp_setup.check_exchange(channel, exchangename, exchangetype):
+if not amqp_connection.check_exchange(channel, exchangename, exchangetype):
     print(
         "\nCreate the 'Exchange' before running this microservice. \nExiting the program."
     )
-    sys.exit(0)  # Exit with a success status
+    sys.exit(0)
 
 
 @app.route("/api/v1/cancel_concert", methods=["POST"])
@@ -111,7 +110,6 @@ def process_cancel_concert(user_booking, concert_id):
         )
         print("cancel_concert_result:", cancel_concert_result)
 
-
         print("\n-----Triggering refunds-----")
         payment_result = invoke_http(
             payment_URL + user_booking["concert_id"], method="POST"
@@ -121,7 +119,8 @@ def process_cancel_concert(user_booking, concert_id):
         print("\n-----Notifying ticket holders-----")
         data = {
             "recipient_email": user_booking["email"],
-            "message": "Concert cancelled",
+            "subject": "[Alert]",
+            "message": "Order has been cancelled",
         }
 
         notification_result = invoke_http(notification_URL, method="POST", json=data)
@@ -170,10 +169,11 @@ def process_cancel_concert(user_booking, concert_id):
                 "\n\n-----Publishing the (notification info) message with routing_key= notification.info-----"
             )
 
-            # invoke_http(activity_log_URL, method="POST", json=order_result)
             channel.basic_publish(
                 exchange=exchangename, routing_key="notification.info", body=message
             )
+
+        print("###### Concert Successfully Cancelled ######\n")
 
         return {
             "code": 200,
@@ -193,4 +193,4 @@ def process_cancel_concert(user_booking, concert_id):
 
 if __name__ == "__main__":
     print("This is flask " + os.path.basename(__file__) + " for canceling concerts...")
-    app.run(host="0.0.0.0", port=5200, debug=True)
+    app.run(host="0.0.0.0", port=PORT, debug=True)

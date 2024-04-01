@@ -4,30 +4,30 @@ import os, sys
 from os import environ
 from dotenv import load_dotenv
 from invokes import invoke_http
+import pika
+import json
+import amqp_connection
 
 load_dotenv()
 
-import pika
-import json
-import amqp_setup
-
 app = Flask(__name__)
-CORS(app)
+CORS(app, supports_credentials=True)
+PORT = 5100
 
-booking_URL = "http://localhost:5001/api/v1/create_booking"
-concert_URL = "http://localhost:5002/api/v1/isConcertSoldOut/"
-notification_URL = "http://localhost:5003/api/v1/send_email"
-activity_log_URL = "http://localhost:5004/api/v1/activity_log"
-error_URL = "http://localhost:5005/api/v1/error"
+booking_URL = "http://booking_service:5001/api/v1/create_booking"
+concert_URL = "http://concert_service:5002/api/v1/isConcertSoldOut/"
+notification_URL = "http://notification_service:5003/api/v1/send_email"
+activity_log_URL = "http://activity_log_service:5004/api/v1/activity_log"
+error_URL = "http://error_service:5005/api/v1/error"
 
 # exchangename = environ.get("EXCHANGE_NAME")
 # exchangetype = environ.get("EXCHANGE_TYPE")
 exchangename = "booking_topic"
 exchangetype = "topic"
-connection = amqp_setup.create_connection()
+connection = amqp_connection.create_connection()
 channel = connection.channel()
 
-if not amqp_setup.check_exchange(channel, exchangename, exchangetype):
+if not amqp_connection.check_exchange(channel, exchangename, exchangetype):
     print(
         "\nCreate the 'Exchange' before running this microservice. \nExiting the program."
     )
@@ -121,7 +121,7 @@ def processBookConcert(booking):
 
     concert_id = booking_result["data"]["concert_id"]
 
-    print("\n\n-----Invoking event microservice-----")
+    print("\n\n-----Invoking concert microservice-----")
     concert_result = invoke_http(concert_URL + str(concert_id), method="GET")
     print("concert_result:", concert_result, "\n")
 
@@ -155,6 +155,7 @@ def processBookConcert(booking):
     data = {
         "recipient_email": email,
         "message": "Thank you for booking with us!",
+        "subject": "Booking Confirmation",
     }
     notification_result = invoke_http(notification_URL, method="POST", json=data)
     print("notification_result:", notification_result, "\n")
@@ -191,7 +192,7 @@ def processBookConcert(booking):
         channel.basic_publish(
             exchange=exchangename, routing_key="notification.info", body=message
         )
-    print("\nNotification published to localhost Exchange.\n")
+    print("\nNotification published to Exchange.\n")
 
     print("###### Booking Successful ######\n")
 
@@ -204,4 +205,4 @@ def processBookConcert(booking):
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5100, debug=True)
+    app.run(host="0.0.0.0", port=PORT, debug=True)
