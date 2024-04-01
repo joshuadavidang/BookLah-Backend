@@ -293,9 +293,9 @@ services:
     depends_on:
       - rabbitmq
       # - auth_service
-      - booking_service
       - concert_service
-      - notification_service
+      - forum_service
+      - payment_service
       - activity_log
       - error
 

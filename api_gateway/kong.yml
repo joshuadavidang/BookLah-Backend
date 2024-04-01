@@ -32,10 +32,6 @@ services:
         paths:
           - /api/v1/getAdminCreatedConcert/<string:userId>
 
-      - name: add_concert_route
-        paths:
-          - /api/v1/addConcert/<string:concert_id>
-
       - name: update_concert_availability_route
         paths:
           - /api/v1/updateConcertAvailability/<string:concert_id>
@@ -96,3 +92,35 @@ services:
         paths:
           - /api/v1/get_booking/<string:booking_id>
         strip_path: true
+
+  - name: book_concert
+    url: http://book_concert_microservice:5100
+    routes:
+      - name: book_concert_route
+        paths: 
+          - /api/v1/book_concert
+        strip_path: true
+
+  - name: cancel_booking
+  url: http://cancel_booking_microservice:5200
+  routes:
+    - name: cancel_booking_route
+      paths: 
+        - /api/v1/cancel_concert
+      strip_path: true
+
+  - name: forum_complex
+  url: http://get_forum_microservice:5300
+  routes:
+    - name: get_forum_route
+      paths: 
+        - /api/v1/get_forum
+      strip_path: true
+  
+    - name: create_concert
+  url: http://create_concert_microservice:5400
+  routes:
+    - name: create_concert_route
+      paths: 
+        - /api/v1/create_concert
+      strip_path: true
