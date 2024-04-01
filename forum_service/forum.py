@@ -3,7 +3,6 @@ from dbConfig import app, db, PORT
 from datetime import datetime
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import UUID
 
 
 class Forums(db.Model):
@@ -277,7 +276,7 @@ def addComment(post_id):
         )
 
 
-@app.route("/api/v1/getComments/<uuid:post_id>")
+@app.route("/api/v1/getComments/<string:post_id>")
 def getComments(post_id):
     comments = (
         Comments.query.filter_by(post_id=post_id).order_by(Comments.created_at).all()

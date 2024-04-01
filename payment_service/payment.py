@@ -61,10 +61,6 @@ def get_config():
 ##STRIPE IDS
 @app.route("/api/v1/get_stripeids/<string:concert_id>/<string:category>")
 def get_stripeids(concert_id, category):
-
-    # return (concert_id, type(concert_id))
-    # concert_id_uuid = UUID(str(concert_id))
-
     stripe_ids = db.session.scalars(
         db.select(StripeIds)
         .filter_by(concert_id=concert_id, category=category)
@@ -211,7 +207,10 @@ def webhook_recieved():
 
 
 ## PAYMENT INTENT DB
-@app.route("/api/v1/add_payment_intent/<string:payment_intent>/<string:concert_id>", methods=["POST"])
+@app.route(
+    "/api/v1/add_payment_intent/<string:payment_intent>/<string:concert_id>",
+    methods=["POST"],
+)
 def add_payment_intent(payment_intent, concert_id):
     if db.session.scalars(
         db.select(PaymentIntent).filter_by(payment_intent=payment_intent).limit(1)
@@ -235,27 +234,23 @@ def add_payment_intent(payment_intent, concert_id):
         db.session.add(payment_intent_db)
         db.session.commit()
     except:
-        return (
-            jsonify(
-                {
-                    "code": 500,
-                    "data": {
-                        "payment_intent": payment_intent,
-                        "concert_id": concert_id,
-                    },
-                    "message": "An error occurred adding the Payment Intent.",
-                }
-            )
-        )
-
-    return (
-        jsonify(
+        return jsonify(
             {
-                "code": 201,
-                "data": payment_intent_db.json(),
-                "message": "Payment Intent have been added successfully",
+                "code": 500,
+                "data": {
+                    "payment_intent": payment_intent,
+                    "concert_id": concert_id,
+                },
+                "message": "An error occurred adding the Payment Intent.",
             }
         )
+
+    return jsonify(
+        {
+            "code": 201,
+            "data": payment_intent_db.json(),
+            "message": "Payment Intent have been added successfully",
+        }
     )
 
 

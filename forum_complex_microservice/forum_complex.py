@@ -6,18 +6,17 @@ from dotenv import load_dotenv
 from invokes import invoke_http
 import amqp_connection
 
-app = Flask(__name__)
-CORS(app)
-
-load_dotenv()
-
 import pika
 import json
 import amqp_connection
 
-booking_URL = "http://localhost:5001/api/v1/get_user_bookings/"
-forum_URL = "http://localhost:5007/api/v1/getForum/"
+load_dotenv()
+app = Flask(__name__)
+CORS(app, supports_credentials=True)
+PORT = 5300
 
+booking_URL = "http://booking_service:5001/api/v1/get_user_bookings/"
+forum_URL = "http://forum_service:5007/api/v1/getForum/"
 
 # exchangename = environ.get("EXCHANGE_NAME")
 # exchangetype = environ.get("EXCHANGE_TYPE")
@@ -30,15 +29,12 @@ if not amqp_connection.check_exchange(channel, exchangename, exchangetype):
     print(
         "\nCreate the 'Exchange' before running this microservice. \nExiting the program."
     )
-    sys.exit(0)  # Exit with a success status
+    sys.exit(0)
 
 
-@app.route("/get_forum", methods=["POST"])
+@app.route("/api/v1/get_forum", methods=["POST"])
 def get_forum():
-    # Simple check of input format and data of the request are JSON
     if request.is_json:
-
-        # userID = request.get_json()["user_id"]
         try:
             booking = request.get_json()
             print("\nReceived an order in JSON:", booking)
@@ -51,7 +47,6 @@ def get_forum():
             return result
 
         except Exception as e:
-            # Unexpected error in code
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             ex_str = (
@@ -72,7 +67,6 @@ def get_forum():
                 }
             )
 
-    # if reached here, not a JSON request.
     return (
         jsonify(
             {"code": 400, "message": "Invalid JSON input: " + str(request.get_data())}
@@ -88,8 +82,12 @@ def processGetForum(booking):
         user_id = booking["user_id"]
         print(booking_URL + user_id)
         booking_result = invoke_http(booking_URL + user_id, method="GET", json=booking)
-        print(booking)
-        print("booking_result:", booking_result)
+        filtered_booking_result = [
+            booking
+            for booking in booking_result["data"]["bookings"]
+            if booking["forum_joined"] == True
+        ]
+        print("filtered_booking_result:", filtered_booking_result)
 
         # Check the booking result; if a failure, publish error to error microservice and return the error
         booking_code = booking_result["code"]
@@ -121,6 +119,17 @@ def processGetForum(booking):
                 body="Bookings obtained succesfully",
             )
 
+        if len(filtered_booking_result) == 0:
+            return (
+                jsonify(
+                    {
+                        "code": 200,
+                        "message": "User has not joined any forums.",
+                    }
+                ),
+                200,
+            )
+
         # Invoke forum microservice to get forum based on concert ID
         print("\n-----Invoking forum microservice to get forum-----")
         forum_result = invoke_http(forum_URL + user_id, method="GET")
@@ -148,7 +157,6 @@ def processGetForum(booking):
                 500,
             )
 
-        # Return forum result
         else:
             print(
                 "\n\n-----Publishing the (booking info) message with routing_key=forum.info-----"
@@ -159,10 +167,11 @@ def processGetForum(booking):
                 body="forums obtained successfully",
             )
 
+        print("###### Forums Retrieved Successful ######\n")
+
         return forum_result
 
     except Exception as e:
-        # Unexpected error in code
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         ex_str = (
@@ -185,4 +194,4 @@ def processGetForum(booking):
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5300, debug=True)
+    app.run(host="0.0.0.0", port=PORT, debug=True)

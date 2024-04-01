@@ -17,15 +17,16 @@ def send_email():
         data = request.get_json()
         recipient_email = data.get("recipient_email")
         message = data.get("message")
+        subject = data.get("subject")
 
-        if not (recipient_email and message):
+        if not (recipient_email and message and subject):
             return jsonify({"error": "Missing required parameters"}), 400
 
         try:
             mail = mt.Mail(
                 sender=mt.Address(email="mailtrap@demomailtrap.com", name="BookLah"),
                 to=[mt.Address(email=recipient_email)],
-                subject="Order Confirmation",
+                subject=subject,
                 text=message,
                 category="Integration Test",
             )
