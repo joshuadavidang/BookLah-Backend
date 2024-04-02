@@ -11,9 +11,9 @@ app = Flask(__name__)
 CORS(app, supports_credentials=True)
 PORT = 5200
 
-booking_URL = "http://booking_service:5001/api/v1/get_bookings"
+booking_URL = "http://booking_service:5001/api/v1/get_concert_bookings/"
 update_concert_URL = "http://concert_service:5002/api/v1/updateConcertAvailability/"
-notification_URL = "http://notification_service:5003/api/v1/send_email"
+notification_URL = "http://notification_service:5003/api/v1/send_refund_emails"
 activity_log_URL = "http://activity_log_service:5004/api/v1/activity_log"
 error_URL = "http://error_service:5005/api/v1/error"
 payment_URL = "http://payment_service:5006/api/v1/refund/"
@@ -37,37 +37,15 @@ if not amqp_connection.check_exchange(channel, exchangename, exchangetype):
 def cancel_concert():
     if request.is_json:
         try:
+            # booking details (from frontend)
             booking = request.get_json()
-            # Retrieve list of users who have booked the specified concert from the booking microservice
-            concert_id = booking.get("concert_id")
-            booking_response = requests.get(f"{booking_URL}?concert_id={concert_id}")
-            if booking_response.status_code == 200:
-                booked_users = (
-                    booking_response.json().get("data", {}).get("bookings", [])
-                )
-                print("Booked users for concert_id =", concert_id)
-                # Filter booked_users based on concert_id
-                booked_users_for_concert = [
-                    booking
-                    for booking in booked_users
-                    if booking.get("concert_id") == concert_id
-                ]
-                # Print only the booking information for users who booked tickets for the specified concert
-                for user_booking in booked_users_for_concert:
-                    # process cancel concert
-                    result = process_cancel_concert(user_booking, concert_id)
-            else:
-                return (
-                    jsonify(
-                        {
-                            "code": booking_response.status_code,
-                            "message": f"Failed to retrieve booked users from booking microservice: {booking_response.text}",
-                        }
-                    ),
-                    booking_response.status_code,
-                )
+            print(booking)
+            print("\nReceived a booking order in JSON:", booking)
+            result = process_cancel_concert(booking)
 
+            # return jsonify(result), result["code"]
             return jsonify(result), result["code"]
+        
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -95,100 +73,203 @@ def cancel_concert():
     )
 
 
-def process_cancel_concert(user_booking, concert_id):
-    try:
-        # Perform necessary actions for canceling concert
-        # Example:
-        # 1. Notify ticket holders
-        # 2. Trigger refunds
-        # 3. Cancel event in the event microservice
+def process_cancel_concert(booking):
+    # Perform necessary actions for canceling concert
+    # Example:
+    # 1. Notify ticket holders
+    # 2. Trigger refunds
+    # 3. Cancel event in the event microservice
 
-        print("\n-----Set concert status to CANCELLED-----")
-        data = {"concertStatus": "CANCELLED"}
-        cancel_concert_result = invoke_http(
-            update_concert_URL + user_booking["concert_id"], method="PUT", json=data
+    print("\n-----Set concert status to CANCELLED-----")
+    data = {"concertStatus": "CANCELLED"}
+
+    cancel_concert_result = invoke_http(
+        update_concert_URL + booking["concert_id"], method="PUT", json=data
+    )
+    print("cancel_concert_result:", cancel_concert_result)
+
+    code = cancel_concert_result["code"]
+    message = json.dumps(cancel_concert_result)
+
+    if code not in range(200, 300):
+        print(
+            "\n\n-----Publishing the (concert error) message with routing_key=concert.error-----"
         )
-        print("cancel_concert_result:", cancel_concert_result)
-
-        print("\n-----Triggering refunds-----")
-        payment_result = invoke_http(
-            payment_URL + user_booking["concert_id"], method="POST"
+        channel.basic_publish(
+            exchange=exchangename,
+            routing_key="concert.error",
+            body=message,
+            properties=pika.BasicProperties(delivery_mode=2),
         )
-        print("refund_result:", payment_result)
 
-        print("\n-----Notifying ticket holders-----")
-        data = {
-            "recipient_email": user_booking["email"],
-            "subject": "[Alert]",
-            "message": "Order has been cancelled",
-        }
+        print(
+            "Concert status ({:d}) published to the localhost Exchange:".format(code),
+            cancel_concert_result,
+        )
 
-        notification_result = invoke_http(notification_URL, method="POST", json=data)
-        print("notification_result:", notification_result)
-
-        code = notification_result["code"]
-        message = json.dumps(notification_result)
-
-        if code not in range(200, 300):
-            # Inform the error microservice
-            # print('\n\n-----Invoking error microservice as order fails-----')
-            print(
-                "\n\n-----Publishing the (order error) message with routing_key=order.error-----"
-            )
-
-            # invoke_http(error_URL, method="POST", json=order_result)
-            channel.basic_publish(
-                exchange=exchangename,
-                routing_key="order.error",
-                body=message,
-                properties=pika.BasicProperties(delivery_mode=2),
-            )
-            # make message persistent within the matching queues until it is received by some receiver
-            # (the matching queues have to exist and be durable and bound to the exchange)
-
-            # - reply from the invocation is not used;
-            # continue even if this invocation fails
-            print(
-                "\nOrder status ({:d}) published to the RabbitMQ Exchange:".format(
-                    code
-                ),
-                notification_result,
-            )
-
-            # 7. Return error
-            return {
-                "code": 500,
-                "data": {"notification_result": notification_result},
-                "message": "Notification creation failure sent for error handling.",
-            }
-        else:
-            # 4. Record new order
-            # record the activity log anyway
-            # print('\n\n-----Invoking activity_log microservice-----')
-            print(
-                "\n\n-----Publishing the (notification info) message with routing_key= notification.info-----"
-            )
-
-            channel.basic_publish(
-                exchange=exchangename, routing_key="notification.info", body=message
-            )
-
-        print("###### Concert Successfully Cancelled ######\n")
-
-        return {
-            "code": 200,
-            "data": {
-                "notification_result": notification_result,
-                "payment_result": payment_result,
-                "cancel_event_result": cancel_concert_result,
-            },
-        }
-
-    except Exception as e:
         return {
             "code": 500,
-            "message": f"An error occurred while processing cancelation: {str(e)}",
+            "data": {"cancel_concert_result": cancel_concert_result},
+            "message": "Cancelling concert failure sent for error handling.",
         }
+
+    else:
+        print(
+            "\n\n-----Publishing the (concert info) message with routing_key=concert.info-----"
+        )
+        channel.basic_publish(
+            exchange=exchangename, routing_key="concert.info", body=message
+        )
+
+    print("\n Concert published to localhost Exchange.\n")
+
+    print("\n-----INVOKING BOOKING MICROSERVICE-----")
+
+    # Retrieve list of users who have booked the specified concert from the booking microservice
+    # concert_id = booking.get("concert_id")
+    booking_result = invoke_http(booking_URL + booking["concert_id"], method="GET")
+
+    code = booking_result["code"]
+    message = json.dumps(booking_result)
+
+    if code not in range(200, 300):
+        print(
+            "\n\n-----Publishing the (booking error) message with routing_key=booking.error-----"
+        )
+        channel.basic_publish(
+            exchange=exchangename,
+            routing_key="booking.error",
+            body=message,
+            properties=pika.BasicProperties(delivery_mode=2),
+        )
+
+        print(
+            "Booking status ({:d}) published to the localhost Exchange:".format(code),
+            booking_result,
+        )
+
+        return {
+            "code": 500,
+            "data": {"booking_result": booking_result},
+            "message": "Retrieving bookings failure sent for error handling.",
+        }
+
+    else:
+        print(
+            "\n\n-----Publishing the (booking info) message with routing_key=booking.info-----"
+        )
+        channel.basic_publish(
+            exchange=exchangename, routing_key="booking.info", body=message
+        )
+
+    print("Booking published to localhost Exchange.\n")
+
+    print("\n-----Triggering refunds-----")
+    payment_result = invoke_http(
+        payment_URL + booking["concert_id"], method="POST"
+    )
+    print("refund_result:", payment_result)
+    code = payment_result["code"]
+    message = json.dumps(payment_result)
+
+    if code not in range(200, 300):
+        print(
+            "\n\n-----Publishing the (payment error) message with routing_key=refund.error-----"
+        )
+        channel.basic_publish(
+            exchange=exchangename,
+            routing_key="refund.error",
+            body=message,
+            properties=pika.BasicProperties(delivery_mode=2),
+        )
+
+        print(
+            "Refund status ({:d}) published to the localhost Exchange:".format(code),
+            payment_result,
+        )
+
+        return {
+            "code": 500,
+            "data": {"refund_result": payment_result},
+            "message": "Triggering refund failure sent for error handling.",
+        }
+
+    else:
+        print(
+            "\n\n-----Publishing the (refund info) message with routing_key=refund.info-----"
+        )
+        channel.basic_publish(
+            exchange=exchangename, routing_key="refund.info", body=message
+        )
+
+    print("\nRefund published to localhost Exchange.\n")
+
+
+    print("\n-----Notifying ticket holders-----")
+    print(booking_result)
+    booking_arr = booking_result["data"]["bookings"]
+    email_arr = []
+    for booking_obj in booking_arr: 
+        email = booking_obj["email"]
+        email_arr.append(email)
+
+    print(email_arr)
+
+    data = {
+        "recipient_email": email_arr,
+        "subject": "[Alert]",
+        "message": "Order has been cancelled",
+    }
+
+    notification_result = invoke_http(notification_URL, method="POST", json=data)
+    print("notification_result:", notification_result)
+
+    code = notification_result["code"]
+    message = json.dumps(notification_result)
+
+    if code not in range(200, 300):
+        print(
+            "\n\n-----Publishing the (notification error) message with routing_key=notification.error-----"
+        )
+        channel.basic_publish(
+            exchange=exchangename,
+            routing_key="notification.error",
+            body=message,
+            properties=pika.BasicProperties(delivery_mode=2),
+        )
+        
+        print(
+            "\nNotification status ({:d}) published to the RabbitMQ Exchange:".format(
+                code
+            ),
+            notification_result,
+        )
+
+        return {
+            "code": 500,
+            "data": {"notification_result": notification_result},
+            "message": "Notification creation failure sent for error handling.",
+        }
+    
+    else:
+        print(
+            "\n\n-----Publishing the (notification info) message with routing_key= notification.info-----"
+        )
+
+        channel.basic_publish(
+            exchange=exchangename, routing_key="notification.info", body=message
+        )
+
+    print("###### Concert Successfully Cancelled ######\n")
+
+    return {
+        "code": 201,
+        "data": {
+            "notification_result": notification_result,
+            "payment_result": payment_result,
+            "cancel_event_result": cancel_concert_result,
+        },
+    }
 
 
 if __name__ == "__main__":
