@@ -153,6 +153,26 @@ def getConcert(concert_id):
     return jsonify({"code": 200, "data": concert.json()})
 
 
+@app.route("/api/v1/getConcertStatus/<string:concert_id>")
+def getConcertStatus(concert_id):
+    concert = db.session.scalars(
+        db.select(Concert).filter_by(concert_id=concert_id).limit(1)
+    ).first()
+
+    if not concert:
+        return jsonify({"code": 404, "message": "concert not found."}), 404
+
+    return jsonify(
+        {
+            "code": 200,
+            "data": {
+                "concert_id": concert.concert_id,
+                "concert_status": concert.concert_status,
+            },
+        }
+    )
+
+
 @app.route("/api/v1/isConcertSoldOut/<string:concert_id>")
 def isConcertSoldOut(concert_id):
     concert = db.session.query(Concert).filter_by(concert_id=concert_id).first()

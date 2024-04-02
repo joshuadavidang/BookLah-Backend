@@ -1,25 +1,24 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os, sys
-from os import environ
 from dotenv import load_dotenv
 from invokes import invoke_http
 import amqp_connection
-
 import pika
 import json
-import amqp_connection
 
-load_dotenv()
+
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
 PORT = 5300
 
+load_dotenv()
+
+
 booking_URL = "http://booking_service:5001/api/v1/get_user_bookings/"
 forum_URL = "http://forum_service:5007/api/v1/getForum/"
+GET_CONCERT_STATUS = "http://concert_service:5002/api/v1/getConcertStatus"
 
-# exchangename = environ.get("EXCHANGE_NAME")
-# exchangetype = environ.get("EXCHANGE_TYPE")
 exchangename = "forum_topic"
 exchangetype = "topic"
 connection = amqp_connection.create_connection()
@@ -39,8 +38,6 @@ def get_forum():
             booking = request.get_json()
             print("\nReceived an order in JSON:", booking)
 
-            # do the actual work
-            # 1. Get forum based on concert ID
             result = processGetForum(booking)
             print("\n------------------------")
             print("\nresult: ", result)
@@ -77,8 +74,7 @@ def get_forum():
 
 def processGetForum(booking):
     try:
-        # Invoke booking microservice to get concert ID
-        print("\n-----Invoking booking microservice to get user ID-----")
+        print("\n-----Invoking booking microservice to get userid-----")
         user_id = booking["user_id"]
         print(booking_URL + user_id)
         booking_result = invoke_http(booking_URL + user_id, method="GET", json=booking)
@@ -89,10 +85,8 @@ def processGetForum(booking):
         ]
         print("filtered_booking_result:", filtered_booking_result)
 
-        # Check the booking result; if a failure, publish error to error microservice and return the error
         booking_code = booking_result["code"]
         if booking_code not in range(200, 300):
-            # Publish error message to error microservice
             error_message = json.dumps(booking_result)
             channel.basic_publish(
                 exchange=exchangename,
@@ -100,7 +94,6 @@ def processGetForum(booking):
                 body=error_message,
                 properties=pika.BasicProperties(delivery_mode=2),
             )
-            # Return error message
             return (
                 jsonify(
                     {
@@ -130,15 +123,12 @@ def processGetForum(booking):
                 200,
             )
 
-        # Invoke forum microservice to get forum based on concert ID
         print("\n-----Invoking forum microservice to get forum-----")
         forum_result = invoke_http(forum_URL + user_id, method="GET")
         print("forum_result", forum_result)
 
-        # Check the forum result; if a failure, publish error to error microservice and return the error
         forum_code = forum_result["code"]
         if forum_code not in range(200, 300):
-            # Publish error message to error microservice
             error_message = json.dumps(forum_result)
             channel.basic_publish(
                 exchange=exchangename,
@@ -146,7 +136,6 @@ def processGetForum(booking):
                 body=error_message,
                 properties=pika.BasicProperties(delivery_mode=2),
             )
-            # Return error message
             return (
                 jsonify(
                     {
@@ -167,9 +156,38 @@ def processGetForum(booking):
                 body="forums obtained successfully",
             )
 
+        print(
+            "\n-----Invoking concert microservice to get concert status. only return those available concerts-----"
+        )
+
+        available_forum = []
+        for forum in forum_result["data"]:
+            concert_id = forum["concert_id"]
+            GET_CONCERT_STATUS_API = f"{GET_CONCERT_STATUS}/{concert_id}"
+            concert_result = invoke_http(GET_CONCERT_STATUS_API, method="GET")
+            if concert_result["data"]["concert_status"] == "AVAILABLE":
+                available_forum.append(forum)
+
+        if len(available_forum) == 0:
+            return (
+                jsonify(
+                    {
+                        "code": 400,
+                        "message": "No available forums.",
+                    }
+                ),
+                400,
+            )
+
         print("###### Forums Retrieved Successful ######\n")
 
-        return forum_result
+        return jsonify(
+            {
+                "code": 200,
+                "data": available_forum,
+                "message": "Forums retrieved successfully.",
+            }
+        )
 
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
