@@ -15,7 +15,6 @@ PORT = 5400
 
 ADD_CONCERT_URL = "http://concert_service:5002/api/v1/addConcert/"
 ADD_SEATS_URL = "http://concert_service:5002/api/v1/createSeats"
-ADD_STRIPE_ID_URL = "http://payment_service:5006/api/v1/add_stripeids/"
 ADD_FORUM_URL = "http://forum_service:5007/api/v1/addForum"
 ACTIVITY_LOG_URL = "http://activity_log_service:5004/api/v1/activity_log"
 ERROR_URL = "http://error_service:5005/api/v1/error"
@@ -167,46 +166,6 @@ def processCreateConcert(concert):
             exchange=exchangename, routing_key="concert.info", body=message
         )
 
-    print("\n-----Invoking payment microservice (stripe)-----")
-    product_data = {"name": concert["title"], "price": concert["price"]}
-    stripe_result = invoke_http(
-        ADD_STRIPE_ID_URL + concert_id + "/category1", method="POST", json=product_data
-    )
-    print(stripe_result)
-    code = stripe_result["code"]
-    message = json.dumps(stripe_result)
-
-    if code not in range(200, 300):
-        print(
-            "\n\n-----Publishing the (concert error) message with routing_key=concert.error-----"
-        )
-        channel.basic_publish(
-            exchange=exchangename,
-            routing_key="concert.error",
-            body=message,
-            properties=pika.BasicProperties(delivery_mode=2),
-        )
-        print(
-            "Stripe result status ({:d}) published to the localhost Exchange:".format(
-                code
-            ),
-            stripe_result,
-        )
-
-        return {
-            "code": 500,
-            "data": {"stripe_result": stripe_result},
-            "message": "Add product to stripe failure sent for error handling.",
-        }
-
-    else:
-        print(
-            "\n\n-----Publishing the (concert info) message with routing_key=concert.info-----"
-        )
-        channel.basic_publish(
-            exchange=exchangename, routing_key="concert.info", body=message
-        )
-
     print("\n-----Invoking forum microservice-----")
     forum_data = {
         "concert_id": concert["concert_id"],
@@ -233,7 +192,7 @@ def processCreateConcert(concert):
             "Forum result status ({:d}) published to the localhost Exchange:".format(
                 code
             ),
-            stripe_result,
+            forum_result,
         )
 
         return {
