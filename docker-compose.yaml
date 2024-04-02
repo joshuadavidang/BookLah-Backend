@@ -1,3 +1,5 @@
+version: "3.8"
+
 volumes:
   pgdata:
   rabbitmq_data:
@@ -7,26 +9,30 @@ networks:
     driver: bridge
     name: kong-net
 
-version: "3.8"
-
 services:
   #######################################
   # Kong: The API Gateway
   #######################################
   kong:
     image: kong/kong-gateway:3.2.2.5
+    hostname: kong
+    container_name: kong
+    volumes:
+      - ./api_gateway:/opt/kong
     platform: linux/amd64 # <- required for Mac M1 chip.
     restart: always
     networks:
       - kong-net
     environment:
-      KONG_DATABASE: off
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /opt/kong/kong.yml
       KONG_PROXY_ACCESS_LOG: /dev/stdout
       KONG_ADMIN_ACCESS_LOG: /dev/stdout
       KONG_PROXY_ERROR_LOG: /dev/stderr
       KONG_ADMIN_ERROR_LOG: /dev/stderr
-      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+      KONG_ADMIN_LISTEN: "0.0.0.0:8001, 0.0.0.0:8444 ssl"
       KONG_ADMIN_GUI_URL: http://localhost:8002
+    command: "kong start"
     ports: # https://docs.konghq.com/gateway/latest/production/networking/default-ports/
       - "8000:8000" # Takes incoming HTTP traffic from Consumers, and forwards it to upstream Services.
       - "8443:8443" # Takes incoming HTTPS traffic from Consumers, and forwards it to upstream Services.
@@ -287,9 +293,9 @@ services:
     depends_on:
       - rabbitmq
       # - auth_service
-      - booking_service
       - concert_service
-      - notification_service
+      - forum_service
+      - payment_service
       - activity_log
       - error
 
