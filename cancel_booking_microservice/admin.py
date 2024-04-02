@@ -218,7 +218,13 @@ def process_cancel_concert(booking):
         "message": "Order has been cancelled",
     }
 
-    notification_result = invoke_http(notification_URL, method="POST", json=data)
+    #     data = {
+    #         "recipient_email": booking_obj["email"],
+    #         "subject": "[Alert]",
+    #         "message": "Order has been cancelled",
+    #     }
+
+    notification_result = invoke_http(notification_URL, method="POST", json=booking_arr)
     print("notification_result:", notification_result)
 
     code = notification_result["code"]
