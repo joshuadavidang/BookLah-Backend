@@ -79,3 +79,38 @@ services:
           - /api/v1/create_concert
         methods: 
           - POST
+
+plugins:
+- name: proxy-cache
+  config:
+    response_code:
+    - 200
+    request_method:
+    - GET
+    content_type:
+    - text/plain
+    - application/json
+    cache_ttl: 300
+    strategy: memory
+
+- name: cors
+  config:
+    origins:
+    - "*"
+    methods:
+    - GET
+    - POST
+    - PUT
+    - DELETE
+    headers:
+    - Accept
+    - Accept-Version
+    - Content-Length
+    - Content-MD5
+    - Content-Type
+    - Date
+    - X-Auth-Token
+    exposed_headers:
+    - X-Auth-Token
+    credentials: true
+    max_age: 3600
