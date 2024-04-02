@@ -58,27 +58,6 @@ def get_config():
     return jsonify({"code": 200, "publishable_key": os.getenv("STRIPE_PUBLIC_KEY")})
 
 
-##STRIPE IDS
-@app.route("/api/v1/get_stripeids/<string:concert_id>/<string:category>")
-def get_stripeids(concert_id, category):
-    stripe_ids = db.session.scalars(
-        db.select(StripeIds)
-        .filter_by(concert_id=concert_id, category=category)
-        .limit(1)
-    ).first()
-
-    if stripe_ids:
-        return jsonify({"code": 200, "data": stripe_ids.json()})
-
-    return jsonify(
-        {
-            "code": 404,
-            "data": {"concert_id": concert_id, "category": category},
-            "message": "Stripe IDs not found.",
-        }
-    )
-
-
 ## GET CUSTOMER DATA FROM STRIPE AFTER PAYMENT IS SUCCESSFUL
 @app.route("/api/v1/getCustomerData", methods=["POST"])
 def getCustomerInfo():
@@ -269,68 +248,6 @@ def create_stripeids(product_name, price):
         "data": {"price_id": price["id"], "product_id": price["product"]},
         "message": "Stripe IDs created successfully",
     }
-
-
-# add Stripe IDs to database
-@app.route(
-    "/api/v1/add_stripeids/<string:concert_id>/<string:category>", methods=["POST"]
-)
-def add_stripeids(concert_id, category):
-    if db.session.scalars(
-        db.select(StripeIds)
-        .filter_by(concert_id=concert_id, category=category)
-        .limit(1)
-    ).first():
-        return (
-            jsonify(
-                {
-                    "code": 400,
-                    "data": {"concert_id": concert_id, "category": category},
-                    "message": "Stripe IDs already exist.",
-                }
-            ),
-            400,
-        )
-
-    data = request.get_json()
-    concert_name = data["name"]
-    price = data["price"]
-
-    stripeids = create_stripeids(concert_name, price)
-
-    stripeids_db = StripeIds(
-        concert_id=concert_id,
-        category=category,
-        concert_name=concert_name,
-        price_id=stripeids["data"]["price_id"],
-        product_id=stripeids["data"]["product_id"],
-    )
-
-    try:
-        db.session.add(stripeids_db)
-        db.session.commit()
-    except:
-        return (
-            jsonify(
-                {
-                    "code": 500,
-                    "data": {"concert_id": concert_id, "category": category},
-                    "message": "An error occurred adding the Stripe IDs.",
-                }
-            ),
-            500,
-        )
-
-    return (
-        jsonify(
-            {
-                "code": 201,
-                "data": stripeids_db.json(),
-                "message": "Stripe IDs have been added successfully",
-            }
-        ),
-        201,
-    )
 
 
 ## REFUND
