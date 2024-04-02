@@ -11,9 +11,9 @@ app = Flask(__name__)
 CORS(app, supports_credentials=True)
 PORT = 5200
 
-booking_URL = "http://booking_service:5001/api/v1/get_bookings/"
+booking_URL = "http://booking_service:5001/api/v1/get_concert_bookings/"
 update_concert_URL = "http://concert_service:5002/api/v1/updateConcertAvailability/"
-notification_URL = "http://notification_service:5003/api/v1/send_email"
+notification_URL = "http://notification_service:5003/api/v1/send_refund_emails"
 activity_log_URL = "http://activity_log_service:5004/api/v1/activity_log"
 error_URL = "http://error_service:5005/api/v1/error"
 payment_URL = "http://payment_service:5006/api/v1/refund/"
@@ -164,35 +164,6 @@ def process_cancel_concert(booking):
 
     print("Booking published to localhost Exchange.\n")
 
-    # if booking_result.status_code == 200:
-    #     booked_users = (
-    #         booking_result.json().get("data", {}).get("bookings", [])
-    #     )
-    #     print("Booked users for concert_id =", concert_id)
-    #     # Filter booked_users based on concert_id
-    #     booked_users_for_concert = [
-    #         booking
-    #         for booking in booked_users
-    #         if booking.get("concert_id") == concert_id
-    #     ]
-    #     # Print only the booking information for users who booked tickets for the specified concert
-    #     for user_booking in booked_users_for_concert:
-    #         # process cancel concert
-      
-      
-    #         result = process_cancel_concert(user_booking, concert_id)
-    # else:
-    #     return (
-    #         jsonify(
-    #             {
-    #                 "code": booking_result.status_code,
-    #                 "message": f"Failed to retrieve booked users from booking microservice: {booking_response.text}",
-    #             }
-    #         ),
-    #         booking_response.status_code,
-    #     )
-
-
     print("\n-----Triggering refunds-----")
     payment_result = invoke_http(
         payment_URL + booking["concert_id"], method="POST"
@@ -235,16 +206,22 @@ def process_cancel_concert(booking):
 
 
     print("\n-----Notifying ticket holders-----")
-    booking_arr = booking_result["data"]
-    # for booking_obj in booking_arr: 
+    print(booking_result)
+    booking_arr = booking_result["data"]["bookings"]
+    email_arr = []
+    for booking_obj in booking_arr: 
+        email = booking_obj["email"]
+        email_arr.append(email)
 
-    #     data = {
-    #         "recipient_email": booking_obj["email"],
-    #         "subject": "[Alert]",
-    #         "message": "Order has been cancelled",
-    #     }
-    
-    notification_result = invoke_http(notification_URL, method="POST", json=booking_arr)
+    print(email_arr)
+
+    data = {
+        "recipient_email": email_arr,
+        "subject": "[Alert]",
+        "message": "Order has been cancelled",
+    }
+
+    notification_result = invoke_http(notification_URL, method="POST", json=data)
     print("notification_result:", notification_result)
 
     code = notification_result["code"]

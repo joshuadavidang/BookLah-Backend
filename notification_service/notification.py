@@ -43,7 +43,7 @@ def send_refund_emails():
     if request.method == "POST":
         data = request.get_json()
 
-        recipient_emails = data.get("recipient_email") #array of emails
+        recipient_emails = data["recipient_email"] #array of emails
         message = data.get("message")
         subject = data.get("subject")
 
