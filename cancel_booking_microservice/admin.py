@@ -11,7 +11,7 @@ app = Flask(__name__)
 CORS(app, supports_credentials=True)
 PORT = 5200
 
-booking_URL = "http://booking_service:5001/api/v1/get_bookings"
+booking_URL = "http://booking_service:5001/api/v1/get_bookings/"
 update_concert_URL = "http://concert_service:5002/api/v1/updateConcertAvailability/"
 notification_URL = "http://notification_service:5003/api/v1/send_email"
 activity_log_URL = "http://activity_log_service:5004/api/v1/activity_log"
@@ -37,36 +37,13 @@ if not amqp_connection.check_exchange(channel, exchangename, exchangetype):
 def cancel_concert():
     if request.is_json:
         try:
+            # booking details (from frontend)
             booking = request.get_json()
-            # Retrieve list of users who have booked the specified concert from the booking microservice
-            concert_id = booking.get("concert_id")
-            booking_response = requests.get(f"{booking_URL}?concert_id={concert_id}")
-            if booking_response.status_code == 200:
-                booked_users = (
-                    booking_response.json().get("data", {}).get("bookings", [])
-                )
-                print("Booked users for concert_id =", concert_id)
-                # Filter booked_users based on concert_id
-                booked_users_for_concert = [
-                    booking
-                    for booking in booked_users
-                    if booking.get("concert_id") == concert_id
-                ]
-                # Print only the booking information for users who booked tickets for the specified concert
-                for user_booking in booked_users_for_concert:
-                    # process cancel concert
-                    result = process_cancel_concert(user_booking, concert_id)
-            else:
-                return (
-                    jsonify(
-                        {
-                            "code": booking_response.status_code,
-                            "message": f"Failed to retrieve booked users from booking microservice: {booking_response.text}",
-                        }
-                    ),
-                    booking_response.status_code,
-                )
+            print(booking)
+            print("\nReceived a booking order in JSON:", booking)
+            result = process_cancel_concert(booking)
 
+            # return jsonify(result), result["code"]
             return jsonify(result), result["code"]
         
         except Exception as e:
@@ -96,7 +73,7 @@ def cancel_concert():
     )
 
 
-def process_cancel_concert(user_booking, concert_id):
+def process_cancel_concert(booking):
     # Perform necessary actions for canceling concert
     # Example:
     # 1. Notify ticket holders
@@ -107,7 +84,7 @@ def process_cancel_concert(user_booking, concert_id):
     data = {"concertStatus": "CANCELLED"}
 
     cancel_concert_result = invoke_http(
-        update_concert_URL + user_booking["concert_id"], method="PUT", json=data
+        update_concert_URL + booking["concert_id"], method="PUT", json=data
     )
     print("cancel_concert_result:", cancel_concert_result)
 
@@ -144,11 +121,81 @@ def process_cancel_concert(user_booking, concert_id):
             exchange=exchangename, routing_key="concert.info", body=message
         )
 
-    print("\Concert published to localhost Exchange.\n")
+    print("\n Concert published to localhost Exchange.\n")
+
+    print("\n-----INVOKING BOOKING MICROSERVICE-----")
+
+    # Retrieve list of users who have booked the specified concert from the booking microservice
+    # concert_id = booking.get("concert_id")
+    booking_result = invoke_http(booking_URL + booking["concert_id"], method="GET")
+
+    code = booking_result["code"]
+    message = json.dumps(booking_result)
+
+    if code not in range(200, 300):
+        print(
+            "\n\n-----Publishing the (booking error) message with routing_key=booking.error-----"
+        )
+        channel.basic_publish(
+            exchange=exchangename,
+            routing_key="booking.error",
+            body=message,
+            properties=pika.BasicProperties(delivery_mode=2),
+        )
+
+        print(
+            "Booking status ({:d}) published to the localhost Exchange:".format(code),
+            booking_result,
+        )
+
+        return {
+            "code": 500,
+            "data": {"booking_result": booking_result},
+            "message": "Retrieving bookings failure sent for error handling.",
+        }
+
+    else:
+        print(
+            "\n\n-----Publishing the (booking info) message with routing_key=booking.info-----"
+        )
+        channel.basic_publish(
+            exchange=exchangename, routing_key="booking.info", body=message
+        )
+
+    print("Booking published to localhost Exchange.\n")
+
+    # if booking_result.status_code == 200:
+    #     booked_users = (
+    #         booking_result.json().get("data", {}).get("bookings", [])
+    #     )
+    #     print("Booked users for concert_id =", concert_id)
+    #     # Filter booked_users based on concert_id
+    #     booked_users_for_concert = [
+    #         booking
+    #         for booking in booked_users
+    #         if booking.get("concert_id") == concert_id
+    #     ]
+    #     # Print only the booking information for users who booked tickets for the specified concert
+    #     for user_booking in booked_users_for_concert:
+    #         # process cancel concert
+      
+      
+    #         result = process_cancel_concert(user_booking, concert_id)
+    # else:
+    #     return (
+    #         jsonify(
+    #             {
+    #                 "code": booking_result.status_code,
+    #                 "message": f"Failed to retrieve booked users from booking microservice: {booking_response.text}",
+    #             }
+    #         ),
+    #         booking_response.status_code,
+    #     )
+
 
     print("\n-----Triggering refunds-----")
     payment_result = invoke_http(
-        payment_URL + user_booking["concert_id"], method="POST"
+        payment_URL + booking["concert_id"], method="POST"
     )
     print("refund_result:", payment_result)
     code = payment_result["code"]
@@ -184,16 +231,20 @@ def process_cancel_concert(user_booking, concert_id):
             exchange=exchangename, routing_key="refund.info", body=message
         )
 
-    print("\Refund published to localhost Exchange.\n")
+    print("\nRefund published to localhost Exchange.\n")
+
 
     print("\n-----Notifying ticket holders-----")
-    data = {
-        "recipient_email": user_booking["email"],
-        "subject": "[Alert]",
-        "message": "Order has been cancelled",
-    }
+    booking_arr = booking_result["data"]
+    # for booking_obj in booking_arr: 
 
-    notification_result = invoke_http(notification_URL, method="POST", json=data)
+    #     data = {
+    #         "recipient_email": booking_obj["email"],
+    #         "subject": "[Alert]",
+    #         "message": "Order has been cancelled",
+    #     }
+    
+    notification_result = invoke_http(notification_URL, method="POST", json=booking_arr)
     print("notification_result:", notification_result)
 
     code = notification_result["code"]
