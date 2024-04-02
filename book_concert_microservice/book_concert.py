@@ -114,6 +114,22 @@ def processBookConcert(booking):
         }
     
     elif concert_result["data"]["sold_out"]:
+        print(
+            "\n\n-----Publishing the (concert error) message with routing_key=concert.error-----"
+        )
+        message = json.dumps(concert_result)
+        channel.basic_publish(
+            exchange=exchangename,
+            routing_key="concert.error",
+            body=message,
+            properties=pika.BasicProperties(delivery_mode=2),
+        )
+
+        print(
+            "Concert status ({:d}) published to the localhost Exchange:".format(code),
+            concert_result,
+        )
+        
         return  {
                     "code": 400,
                     "data": {
