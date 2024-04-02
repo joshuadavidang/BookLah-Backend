@@ -43,7 +43,7 @@ def book_concert():
             booking = request.get_json()
             print(booking)
             print("\nReceived a booking order in JSON:", booking)
-            print(booking)
+            # print(booking)
             result = processBookConcert(booking)
 
             return jsonify(result), result["code"]
@@ -81,6 +81,59 @@ def book_concert():
 
 
 def processBookConcert(booking):
+    concert_id = booking["concert_id"]
+
+    print("\n\n-----Invoking concert microservice (CHECK IF CONCERT SOLD OUT)-----")
+    concert_result = invoke_http(concert_URL + str(concert_id), method="GET")
+    print("concert_result:", concert_result, "\n")
+    code = concert_result["code"]
+    message = json.dumps(concert_result)
+
+    code = concert_result["code"]
+    if code not in range(200, 300):
+        print(
+            "\n\n-----Publishing the (concert error) message with routing_key=concert.error-----"
+        )
+        message = json.dumps(concert_result)
+        channel.basic_publish(
+            exchange=exchangename,
+            routing_key="concert.error",
+            body=message,
+            properties=pika.BasicProperties(delivery_mode=2),
+        )
+
+        print(
+            "Concert status ({:d}) published to the localhost Exchange:".format(code),
+            concert_result,
+        )
+
+        return {
+            "code": 500,
+            "data": {"concert_result": concert_result},
+            "message": "Simulated event error sent for error handling.",
+        }
+    
+    elif concert_result["data"]["sold_out"]:
+        return  {
+                    "code": 400,
+                    "data": {
+                        "booking_result": concert_result,
+                    },
+                    "message": "Concert has sold out."
+                }
+    else:
+        
+
+        print(
+            "\n\n-----Publishing the (concert info) message with routing_key=concert.info-----"
+        )
+        channel.basic_publish(
+            exchange=exchangename, routing_key="concert.info", body=message
+        )
+
+    print("\Concert published to localhost Exchange.\n")
+
+
     print("\n-----Invoking booking microservice-----")
     # takes json from frontend and creates a booking
     booking_result = invoke_http(booking_URL, method="POST", json=booking)
@@ -164,36 +217,6 @@ def processBookConcert(booking):
         )
 
     print("\Seat published to localhost Exchange.\n")
-
-    concert_id = booking_result["data"]["concert_id"]
-
-    print("\n\n-----Invoking concert microservice-----")
-    concert_result = invoke_http(concert_URL + str(concert_id), method="GET")
-    print("concert_result:", concert_result, "\n")
-
-    code = concert_result["code"]
-    if code not in range(200, 300):
-        print(
-            "\n\n-----Publishing the (event error) message with routing_key=event.error-----"
-        )
-        message = json.dumps(concert_result)
-        channel.basic_publish(
-            exchange=exchangename,
-            routing_key="event.error",
-            body=message,
-            properties=pika.BasicProperties(delivery_mode=2),
-        )
-
-        print(
-            "Booking status ({:d}) published to the localhost Exchange:".format(code),
-            concert_result,
-        )
-
-        return {
-            "code": 500,
-            "data": {"concert_result": concert_result},
-            "message": "Simulated event error sent for error handling.",
-        }
 
     print("\n\n-----Invoking notification microservice-----")
     email = booking["email"]
