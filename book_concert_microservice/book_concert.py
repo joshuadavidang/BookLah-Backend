@@ -129,11 +129,11 @@ def processBookConcert(booking):
             "Concert status ({:d}) published to the localhost Exchange:".format(code),
             concert_result,
         )
-        
+
         return  {
                     "code": 400,
                     "data": {
-                        "booking_result": concert_result,
+                        "concert_result": concert_result,
                     },
                     "message": "Concert has sold out."
                 }
@@ -221,7 +221,7 @@ def processBookConcert(booking):
         return {
             "code": 500,
             "data": {"seat_result": seat_result},
-            "message": "Booking creation failure sent for error handling.",
+            "message": "Seat creation failure sent for error handling.",
         }
 
     else:
@@ -276,6 +276,7 @@ def processBookConcert(booking):
         channel.basic_publish(
             exchange=exchangename, routing_key="notification.info", body=message
         )
+        
     print("\nNotification published to Exchange.\n")
 
     print("###### Booking Successful ######\n")
