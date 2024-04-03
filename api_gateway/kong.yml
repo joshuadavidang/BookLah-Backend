@@ -79,8 +79,39 @@ services:
         methods:
           - POST
 
-#### [!] TODO: Commented out for development purpose, to be enabled in production ####
+#Key Auth plugin Added -------------
+consumers:
+  - username: admin
+    custom_id: custom_id123
+
+keyauth_credentials:
+  - consumer: admin
+    ttl: 5000
+    key: admin
+
 plugins:
+- name: key-auth
+ config:
+   key_names:
+   - apikey
+
+# ACL Plugin Added -------------
+
+
+acls:
+- consumer: admin
+ group: group1
+ tags: { tag1 }
+
+
+plugins:
+- name: acl
+ config:
+   allow:
+   - group1
+   hide_groups_header: true
+
+  #### [!] TODO: Commented out for development purpose, to be enabled in production ####
   # - name: proxy-cache
   #   config:
   #     response_code:
