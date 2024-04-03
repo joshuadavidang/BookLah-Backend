@@ -41,6 +41,13 @@ services:
       - name: booking_service_route
         paths:
           - /booking
+    # plugins:
+    #     - name: acl
+    #       config:
+    #         allow:
+    #           - admingroup
+    #         deny:
+    #           - usergroup
 
   ##### COMPLEX MICROSERVICES #####
   - name: book_concert
@@ -83,17 +90,23 @@ services:
 consumers:
   - username: admin
     custom_id: custom_id123
+  - username: user
+    custom_id: custom_idabc
 
 keyauth_credentials:
   - consumer: admin
-    ttl: 5000
+    # ttl: 5000
     key: admin
+  - consumer: user
+    key: user
 
-# ACL Plugin Added -------------
-acls:
-- consumer: admin
- group: group1
- tags: { tag1 }
+# # ACL Plugin Added -------------
+# acls:
+# - consumer: admin
+#   group: admingroup
+# - consumer: user
+#   group: usergroup
+#  tags: { tag1 }
 
 
   #### [!] TODO: Commented out for development purpose, to be enabled in production ####
@@ -137,15 +150,16 @@ plugins:
       key_names:
         - apikey
 
-# ACL plugin
-  - name: acl
-    config:
-      allow:
-        - group1
-      hide_groups_header: true
+# # ACL plugin
+#   - name: acl
+#     config:
+#       allow:
+#         - admingroup
+#       hide_groups_header: true
 
 # Bot-detection plugin which will deny request who have chrome value in their user agent header
-- name: bot-detection
-  config:
-    deny:
-      - "(C|c)hrome"
+  - name: bot-detection
+    #### [!] TODO: Uncomment for demo!
+    # config:
+    #   deny:
+    #     - "(C|c)hrome"
