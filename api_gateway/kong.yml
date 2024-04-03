@@ -89,27 +89,12 @@ keyauth_credentials:
     ttl: 5000
     key: admin
 
-plugins:
-- name: key-auth
- config:
-   key_names:
-   - apikey
-
 # ACL Plugin Added -------------
-
-
 acls:
 - consumer: admin
  group: group1
  tags: { tag1 }
 
-
-plugins:
-- name: acl
- config:
-   allow:
-   - group1
-   hide_groups_header: true
 
   #### [!] TODO: Commented out for development purpose, to be enabled in production ####
   # - name: proxy-cache
@@ -123,7 +108,7 @@ plugins:
   #       - application/json
   #     cache_ttl: 300
   #     strategy: memory
-
+plugins:
   - name: cors
     config:
       origins:
@@ -145,3 +130,22 @@ plugins:
         - X-Auth-Token
       credentials: true
       max_age: 3600
+
+#Key-Auth plugin
+  - name: key-auth
+    config:
+      key_names:
+        - apikey
+
+# ACL plugin
+  - name: acl
+    config:
+      allow:
+        - group1
+      hide_groups_header: true
+
+# Bot-detection plugin which will deny request who have chrome value in their user agent header
+- name: bot-detection
+  config:
+    deny:
+      - "(C|c)hrome"
