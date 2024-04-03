@@ -5,17 +5,17 @@ from datetime import datetime
 from sqlalchemy.orm import relationship
 import uuid
 
-######## 8 ENDPOINTS ########
 
-
+######## 7 ENDPOINTS ########
 # /api/v1/getConcerts
 # /api/v1/getConcert/<string:concert_id>
-# /api/v1/isConcertSoldOut/<string:concert_id>
 # /api/v1/updateTicketStatus/<string:concert_id>
 # /api/v1/getAdminCreatedConcert/<string:userId>
 # /api/v1/addConcert/<string:concert_id>
 # /api/v1/updateConcertAvailability/<string:concert_id>
 # /api/v1/updateConcertDetails/<string:concert_id>
+
+
 class Concert(db.Model):
     __tablename__ = "concerts"
     concert_id = db.Column(db.String(100), primary_key=True)
@@ -78,6 +78,7 @@ class Concert(db.Model):
             "concert_status": self.concert_status,
             "description": self.description,
             "created_by": self.created_by,
+            "sold_out": self.sold_out,
         }
 
 
@@ -151,40 +152,6 @@ def getConcert(concert_id):
         return jsonify({"code": 404, "message": "concert not found."}), 404
 
     return jsonify({"code": 200, "data": concert.json()})
-
-
-@app.route("/api/v1/getConcertStatus/<string:concert_id>")
-def getConcertStatus(concert_id):
-    concert = db.session.scalars(
-        db.select(Concert).filter_by(concert_id=concert_id).limit(1)
-    ).first()
-
-    if not concert:
-        return jsonify({"code": 404, "message": "concert not found."}), 404
-
-    return jsonify(
-        {
-            "code": 200,
-            "data": {
-                "concert_id": concert.concert_id,
-                "concert_status": concert.concert_status,
-            },
-        }
-    )
-
-
-@app.route("/api/v1/isConcertSoldOut/<string:concert_id>")
-def isConcertSoldOut(concert_id):
-    concert = db.session.query(Concert).filter_by(concert_id=concert_id).first()
-    if not concert:
-        return jsonify({"code": 404, "message": "concert not found."}), 404
-
-    return jsonify(
-        {
-            "code": 200,
-            "data": {"concert_id": concert.concert_id, "sold_out": concert.sold_out},
-        }
-    )
 
 
 @app.route("/api/v1/updateTicketStatus/<string:concert_id>", methods=["PUT"])
