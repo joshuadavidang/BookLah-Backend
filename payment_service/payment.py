@@ -58,7 +58,7 @@ def create_payment_intent():
 
     try:
         payment = stripe.PaymentIntent.create(amount=price * 100, currency="sgd")
-        result = add_payment_intent(payment["id"], concert_id, payment["status"])
+        result = add_payment_intent(payment["id"], concert_id, payment["status"]).json
         print(payment["status"])
 
         if result:
@@ -130,10 +130,14 @@ def add_payment_intent(payment_intent, concert_id, payment_status):
 ## WEBHOOK
 @app.route("/webhook", methods=["POST"])
 def webhook_recieved():
-    webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
+    # webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
+    webhook_secret = (
+        "whsec_e3851f59862b600aa6e9b2230e2b8b09cc2735e1469bcf09fe66bc47a575d48b"
+    )
     request_data = json.loads(request.data)
 
     if webhook_secret:
+        print("---", request.headers["STRIPE_SIGNATURE"])
         event = None
         payload = request.data
         sig_header = request.headers["STRIPE_SIGNATURE"]
@@ -155,9 +159,14 @@ def webhook_recieved():
 
     data_obj = data["object"]
 
+    print(data_obj)
+
     if event_type == "payment_intent.succeeded":
+        print("SUCCEEDED!")
         payment_intent = data_obj["id"]
-        result = update_payment_intent(payment_intent)
+        result = update_payment_intent(payment_intent).json
+
+        print(">>>>>", result)
 
         if result["code"] not in range(200, 300):
             return jsonify({"update_result": result})
@@ -256,7 +265,7 @@ def refund(concert_id):
     return jsonify(
         {
             "code": 201,
-            "data": pi_list.json(),
+            "data": pi_list,
             "message": "Refund successful",
         }
     )
@@ -265,7 +274,7 @@ def refund(concert_id):
 def get_payment_intent(concert_id):
     payment_intent = db.session.scalars(
         db.select(PaymentIntent).filter_by(
-            concert_id=concert_id, payment_status="payment_intent.succeeded"
+            concert_id=concert_id, payment_status="succeeded"
         )
     ).all()
 

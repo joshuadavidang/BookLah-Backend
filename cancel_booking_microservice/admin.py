@@ -9,6 +9,7 @@ import amqp_connection
 ### Cancel Concert Complex Microservice 2
 # Concert microservice - Update concert status to CANCELLED
 # Booking microservice - Retrieve list of users who have made bookings to trigger refund
+# Payment microservice - Trigger refund
 # Notification microservice - Send email to notify ticket holders
 ###
 

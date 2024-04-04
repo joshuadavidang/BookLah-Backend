@@ -1,5 +1,6 @@
 from flask import request, jsonify
-from dbConfig import app, db, PORT
+from dbConfig import app, db, PORT, socketio
+from flask_socketio import emit
 from datetime import datetime
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
@@ -243,16 +244,20 @@ def updatePost(post_id):
         )
 
 
-@app.route("/api/v1/addComment/<string:post_id>", methods=["POST"])
-def addComment(post_id):
-    post = Posts.query.get(post_id)
-    if not post:
-        return jsonify({"code": 404, "message": "Post not found."}), 404
+#### COMMENTS RELATED STUFF
+@socketio.on("message")
+def handle_message(data):
+    print("received message: ", data)
+    emit("message", data, broadcast=True)
 
-    data = request.get_json()
     user_id = data.get("user_id")
     comment_id = data.get("comment_id")
     content = data.get("content")
+    post_id = data.get("post_id")
+
+    post = db.session.query(Posts).filter_by(post_id=post_id).first()
+    if not post:
+        return jsonify({"code": 404, "message": "Post not found."}), 404
 
     comment = Comments(
         post_id=post_id, comment_id=comment_id, content=content, user_id=user_id
@@ -260,7 +265,6 @@ def addComment(post_id):
 
     try:
         db.session.add(comment)
-        post.replies += 1
         db.session.commit()
         return jsonify({"code": 201, "data": comment.json()}), 201
     except Exception as e:
@@ -276,6 +280,39 @@ def addComment(post_id):
         )
 
 
+# @app.route("/api/v1/addComment/<string:post_id>", methods=["POST"])
+# def addComment(post_id):
+# post = Posts.query.get(post_id)
+# if not post:
+#     return jsonify({"code": 404, "message": "Post not found."}), 404
+
+# data = request.get_json()
+# user_id = data.get("user_id")
+# comment_id = data.get("comment_id")
+# content = data.get("content")
+
+# comment = Comments(
+#     post_id=post_id, comment_id=comment_id, content=content, user_id=user_id
+# )
+
+# try:
+#     db.session.add(comment)
+#     post.replies += 1
+#     db.session.commit()
+#     return jsonify({"code": 201, "data": comment.json()}), 201
+# except Exception as e:
+#     db.session.rollback()
+#     return (
+#         jsonify(
+#             {
+#                 "code": 500,
+#                 "message": f"An error occurred creating the comment: {str(e)}",
+#             }
+#         ),
+#         500,
+#     )
+
+
 @app.route("/api/v1/getComments/<string:post_id>")
 def getComments(post_id):
     comments = (
@@ -289,58 +326,58 @@ def getComments(post_id):
         return jsonify({"code": 404, "message": "No comments found for the post."}), 404
 
 
-@app.route("/api/v1/updateComment/<string:comment_id>", methods=["PUT"])
-def updateComment(comment_id):
-    comment = Comments.query.get(comment_id)
+# @app.route("/api/v1/updateComment/<string:comment_id>", methods=["PUT"])
+# def updateComment(comment_id):
+#     comment = Comments.query.get(comment_id)
 
-    if not comment:
-        return jsonify({"code": 404, "message": "Comment not found."}), 404
+#     if not comment:
+#         return jsonify({"code": 404, "message": "Comment not found."}), 404
 
-    data = request.get_json()
-    content = data.get("content")
+#     data = request.get_json()
+#     content = data.get("content")
 
-    comment.content = content
+#     comment.content = content
 
-    try:
-        db.session.commit()
-        return jsonify({"code": 200, "data": comment.json()}), 200
-    except Exception as e:
-        db.session.rollback()
-        return (
-            jsonify(
-                {
-                    "code": 500,
-                    "message": f"An error occurred updating the comment: {str(e)}",
-                }
-            ),
-            500,
-        )
+#     try:
+#         db.session.commit()
+#         return jsonify({"code": 200, "data": comment.json()}), 200
+#     except Exception as e:
+#         db.session.rollback()
+#         return (
+#             jsonify(
+#                 {
+#                     "code": 500,
+#                     "message": f"An error occurred updating the comment: {str(e)}",
+#                 }
+#             ),
+#             500,
+#         )
 
 
-@app.route("/api/v1/deleteComment/<string:comment_id>", methods=["DELETE"])
-def deleteComment(comment_id):
-    comment = Comments.query.get(comment_id)
+# @app.route("/api/v1/deleteComment/<string:comment_id>", methods=["DELETE"])
+# def deleteComment(comment_id):
+#     comment = Comments.query.get(comment_id)
 
-    if not comment:
-        return jsonify({"code": 404, "message": "Comment not found."}), 404
+#     if not comment:
+#         return jsonify({"code": 404, "message": "Comment not found."}), 404
 
-    try:
-        post = Posts.query.get(comment.post_id)
-        post.replies -= 1
-        db.session.delete(comment)
-        db.session.commit()
-        return jsonify({"code": 200, "message": "Comment deleted successfully."}), 200
-    except Exception as e:
-        db.session.rollback()
-        return (
-            jsonify(
-                {
-                    "code": 500,
-                    "message": f"An error occurred deleting the comment: {str(e)}",
-                }
-            ),
-            500,
-        )
+#     try:
+#         post = Posts.query.get(comment.post_id)
+#         post.replies -= 1
+#         db.session.delete(comment)
+#         db.session.commit()
+#         return jsonify({"code": 200, "message": "Comment deleted successfully."}), 200
+#     except Exception as e:
+#         db.session.rollback()
+#         return (
+#             jsonify(
+#                 {
+#                     "code": 500,
+#                     "message": f"An error occurred deleting the comment: {str(e)}",
+#                 }
+#             ),
+#             500,
+#         )
 
 
 @app.route("/api/v1/addForum", methods=["POST"])
@@ -442,4 +479,4 @@ def delete_forum(concert_id):
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=PORT, debug=True)
+    socketio.run(app, host="0.0.0.0", port=PORT, debug=True, allow_unsafe_werkzeug=True)

@@ -4,10 +4,10 @@ volumes:
   pgdata:
   rabbitmq_data:
 
-networks:
-  kong-net:
-    driver: bridge
-    name: kong-net
+# networks:
+#   kong-net:
+#     driver: bridge
+#     name: kong-net
 
 services:
   #######################################
@@ -21,8 +21,8 @@ services:
       - ./api_gateway:/opt/kong
     platform: linux/amd64 # <- required for Mac M1 chip.
     restart: always
-    networks:
-      - kong-net
+    # networks:
+    #   - kong-net
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /opt/kong/kong.yml
@@ -44,6 +44,13 @@ services:
       - "8446:8446" # Dev Portal. Listens for HTTP traffic, assuming Dev Portal is enabled.
       - "8004:8004" # Dev Portal /files traffic over HTTPS, assuming the Dev Portal is enabled.
       - "8447:8447" # Dev Portal /files traffic over HTTPS, assuming the Dev Portal is enabled.
+    depends_on:
+      - booking_service
+      - booking_service2
+      - concert_service
+      - concert_service2
+      - forum_service
+      - forum_service2
 
   ###########################
   ### Simple Auth Service ###
@@ -84,9 +91,16 @@ services:
     environment:
       - DATABASE_URI=${BOOKING_SERVICE_DATABASE_URI}
       - PYTHONUNBUFFERED=1
-    # depends_on:
-    #   - auth_service
-    #   - booking_db
+
+  booking_service2:
+    build: ./booking_service
+    container_name: booking_service2
+    restart: always
+    ports:
+      - 5010:5001
+    environment:
+      - DATABASE_URI=${BOOKING_SERVICE_DATABASE_URI}
+      - PYTHONUNBUFFERED=1
 
   # ##############################
   # ### Simple Concert Service ###
@@ -102,9 +116,18 @@ services:
       - STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
       - PYTHONUNBUFFERED=1
-    # depends_on:
-    #   - auth_service
-    #   - concert_db
+
+  concert_service2:
+    build: ./concert_service
+    container_name: concert_service2
+    restart: always
+    ports:
+      - 5012:5002
+    environment:
+      - DATABASE_URI=${CONCERT_SERVICE_DATABASE_URI}
+      - STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - PYTHONUNBUFFERED=1
 
   ##############################
   ### Simple Payment Service ###
@@ -134,11 +157,9 @@ services:
       - 5003:5003
     environment:
       - MAILTRAP_API_KEY=${MAILTRAP_API_KEY}
-      # rabbitMQ: "amqp://rabbitmq:5672"
       - PYTHONUNBUFFERED=1
     depends_on:
       - rabbitmq
-      # - auth_service
 
   #############################
   #### Simple Forum Service ###
@@ -152,9 +173,16 @@ services:
     environment:
       - DATABASE_URI=${FORUM_SERVICE_DATABASE_URI}
       - PYTHONUNBUFFERED=1
-    #depends_on:
-    # - auth_service
-    # - forum_db
+
+  forum_service2:
+    build: ./forum_service
+    container_name: forum_service2
+    restart: always
+    ports:
+      - 5017:5007
+    environment:
+      - DATABASE_URI=${FORUM_SERVICE_DATABASE_URI}
+      - PYTHONUNBUFFERED=1
 
   ################
   ### RabbitMQ ###
