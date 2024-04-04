@@ -260,7 +260,10 @@ def handle_message(data):
         return jsonify({"code": 404, "message": "Post not found."}), 404
 
     comment = Comments(
-        post_id=post_id, comment_id=comment_id, content=content, user_id=user_id
+        post_id=post_id,
+        comment_id=comment_id,
+        content=content,
+        user_id=user_id,
     )
 
     try:
@@ -313,71 +316,14 @@ def handle_message(data):
 #     )
 
 
-@app.route("/api/v1/getComments/<string:post_id>")
-def getComments(post_id):
-    comments = (
-        Comments.query.filter_by(post_id=post_id).order_by(Comments.created_at).all()
-    )
-
+@app.route("/api/v1/getComments")
+def getComments():
+    comments = db.session.scalars(db.select(Comments)).all()
     if comments:
         comments_data = [comment.json() for comment in comments]
         return jsonify({"code": 200, "data": comments_data}), 200
-    else:
-        return jsonify({"code": 404, "message": "No comments found for the post."}), 404
 
-
-# @app.route("/api/v1/updateComment/<string:comment_id>", methods=["PUT"])
-# def updateComment(comment_id):
-#     comment = Comments.query.get(comment_id)
-
-#     if not comment:
-#         return jsonify({"code": 404, "message": "Comment not found."}), 404
-
-#     data = request.get_json()
-#     content = data.get("content")
-
-#     comment.content = content
-
-#     try:
-#         db.session.commit()
-#         return jsonify({"code": 200, "data": comment.json()}), 200
-#     except Exception as e:
-#         db.session.rollback()
-#         return (
-#             jsonify(
-#                 {
-#                     "code": 500,
-#                     "message": f"An error occurred updating the comment: {str(e)}",
-#                 }
-#             ),
-#             500,
-#         )
-
-
-# @app.route("/api/v1/deleteComment/<string:comment_id>", methods=["DELETE"])
-# def deleteComment(comment_id):
-#     comment = Comments.query.get(comment_id)
-
-#     if not comment:
-#         return jsonify({"code": 404, "message": "Comment not found."}), 404
-
-#     try:
-#         post = Posts.query.get(comment.post_id)
-#         post.replies -= 1
-#         db.session.delete(comment)
-#         db.session.commit()
-#         return jsonify({"code": 200, "message": "Comment deleted successfully."}), 200
-#     except Exception as e:
-#         db.session.rollback()
-#         return (
-#             jsonify(
-#                 {
-#                     "code": 500,
-#                     "message": f"An error occurred deleting the comment: {str(e)}",
-#                 }
-#             ),
-#             500,
-#         )
+    return jsonify({"code": 404, "message": "No comments found for the post."}), 404
 
 
 @app.route("/api/v1/addForum", methods=["POST"])

@@ -54,6 +54,7 @@ services:
           - /booking/*
         methods:
           - POST
+          - OPTIONS
 
   - name: cancel_booking
     url: http://host.docker.internal:5200/
@@ -63,6 +64,7 @@ services:
           - /cancel/*
         methods:
           - POST
+          - OPTIONS
 
   - name: forum_complex
     url: http://host.docker.internal:5300/
@@ -72,6 +74,7 @@ services:
           - /forum/*
         methods:
           - POST
+          - OPTIONS
 
   - name: create_concert
     url: http://host.docker.internal:5400/
@@ -81,6 +84,7 @@ services:
           - /concert/*
         methods:
           - POST
+          - OPTIONS
 
 ##################################################
 
