@@ -19,8 +19,8 @@ error_URL = "http://error_service:5005/api/v1/error"
 payment_URL = "http://payment_service:5006/api/v1/refund/"
 
 
-exchangename = "order_topic"
-exchangetype = "topic"
+exchangename = os.getenv("EXCHANGE_NAME_CANCEL_BOOKING")
+exchangetype = os.getenv("EXCHANGE_TYPE_CANCEL_BOOKING")
 
 connection = amqp_connection.create_connection()
 channel = connection.channel()

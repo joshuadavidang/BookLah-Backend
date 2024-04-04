@@ -19,8 +19,8 @@ ADD_FORUM_URL = "http://forum_service:5007/api/v1/addForum"
 ACTIVITY_LOG_URL = "http://activity_log_service:5004/api/v1/activity_log"
 ERROR_URL = "http://error_service:5005/api/v1/error"
 
-exchangename = "concert_topic"
-exchangetype = "topic"
+exchangename = os.getenv("EXCHANGE_NAME_CREATE_CONCERT")
+exchangetype = os.getenv("EXCHANGE_TYPE_CREATE_CONCERT")
 connection = amqp_connection.create_connection()
 channel = connection.channel()
 

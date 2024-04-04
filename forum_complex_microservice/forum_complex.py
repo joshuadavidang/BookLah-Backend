@@ -19,8 +19,8 @@ booking_URL = "http://booking_service:5001/api/v1/get_user_bookings/"
 forum_URL = "http://forum_service:5007/api/v1/getForum/"
 GET_CONCERT_STATUS = "http://concert_service:5002/api/v1/getConcert"
 
-exchangename = "forum_topic"
-exchangetype = "topic"
+exchangename = os.getenv("EXCHANGE_NAME_FORUM")
+exchangetype = os.getenv("EXCHANGE_TYPE_FORUM")
 connection = amqp_connection.create_connection()
 channel = connection.channel()
 
