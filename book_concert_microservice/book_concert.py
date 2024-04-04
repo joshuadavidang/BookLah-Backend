@@ -113,7 +113,6 @@ def processBookConcert(booking):
             "data": {"concert_result": concert_result},
             "message": "Simulated event error sent for error handling.",
         }
-
     elif concert_result["data"]["sold_out"]:
         print(
             "\n\n-----Publishing the (concert error) message with routing_key=concert.error-----"
