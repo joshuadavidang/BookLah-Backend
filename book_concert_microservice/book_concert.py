@@ -1,21 +1,27 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os, sys
-from dotenv import load_dotenv
 from invokes import invoke_http
 import pika
 import json
 import amqp_connection
 import uuid
 
-load_dotenv()
+
+### Process Booking Complex Microservice 1
+# Concert microservice - Check if concert is sold out via seat count
+# Booking microservice - Creates booking
+# Concert microservice - Update seat status to taken
+# Notification microservice - Send email
+###
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
 PORT = 5100
 
 concert_URL = "http://concert_service:5002/api/v1/getConcert/"
-seat_url = "http://concert_service:5002/api/v1/updateSeat"
+get_available_seats_count = "http://concert_service:5002/api/v1/countNumSeatsAvailable/"
+update_seat_url = "http://concert_service:5002/api/v1/updateSeat"
 booking_URL = "http://booking_service:5001/api/v1/create_booking"
 notification_URL = "http://notification_service:5003/api/v1/send_email"
 activity_log_URL = "http://activity_log_service:5004/api/v1/activity_log"
@@ -81,18 +87,30 @@ def book_concert():
 def processBookConcert(booking):
     concert_id = booking["concert_id"]
 
-    print("\n\n-----Invoking concert microservice (CHECK IF CONCERT SOLD OUT)-----")
-    concert_result = invoke_http(concert_URL + str(concert_id), method="GET")
-    print("concert_result:", concert_result, "\n")
-    code = concert_result["code"]
-    message = json.dumps(concert_result)
+    print(
+        "\n\n-----Invoking concert microservice to check if concert is sold out by seat count-----"
+    )
+    seat_count_result = invoke_http(
+        get_available_seats_count + str(concert_id), method="GET"
+    )
 
-    code = concert_result["code"]
+    if (seat_count_result["data"]["numSeatsAvailable"]) == 0:
+        return {
+            "code": 400,
+            "data": {"message": "Concert has sold out."},
+            "message": "Concert has sold out.",
+        }
+
+    print("seat_count_result:", seat_count_result, "\n")
+    code = seat_count_result["code"]
+    message = json.dumps(seat_count_result)
+
+    code = seat_count_result["code"]
     if code not in range(200, 300):
         print(
             "\n\n-----Publishing the (concert error) message with routing_key=concert.error-----"
         )
-        message = json.dumps(concert_result)
+        message = json.dumps(seat_count_result)
         channel.basic_publish(
             exchange=exchangename,
             routing_key="concert.error",
@@ -102,37 +120,13 @@ def processBookConcert(booking):
 
         print(
             "Concert status ({:d}) published to the localhost Exchange:".format(code),
-            concert_result,
+            seat_count_result,
         )
 
         return {
             "code": 500,
-            "data": {"concert_result": concert_result},
+            "data": {"concert_result": seat_count_result},
             "message": "Simulated event error sent for error handling.",
-        }
-    elif concert_result["data"]["sold_out"]:
-        print(
-            "\n\n-----Publishing the (concert error) message with routing_key=concert.error-----"
-        )
-        message = json.dumps(concert_result)
-        channel.basic_publish(
-            exchange=exchangename,
-            routing_key="concert.error",
-            body=message,
-            properties=pika.BasicProperties(delivery_mode=2),
-        )
-
-        print(
-            "Concert status ({:d}) published to the localhost Exchange:".format(code),
-            concert_result,
-        )
-
-        return {
-            "code": 400,
-            "data": {
-                "concert_result": concert_result,
-            },
-            "message": "Concert has sold out.",
         }
     else:
 
@@ -190,7 +184,7 @@ def processBookConcert(booking):
         "seat_no": booking["seat_no"],
         "is_taken": True,
     }
-    seat_result = invoke_http(seat_url, method="PUT", json=data)
+    seat_result = invoke_http(update_seat_url, method="PUT", json=data)
     print(seat_result)
     code = seat_result["code"]
     message = json.dumps(seat_result)
@@ -234,7 +228,7 @@ def processBookConcert(booking):
     data = {
         "recipient_email": email,
         "message": "Thank you for booking with us!",
-        "subject": "Booking Confirmation",
+        "subject": f"Booking Confirmation",
     }
     notification_result = invoke_http(notification_URL, method="POST", json=data)
     print("notification_result:", notification_result, "\n")

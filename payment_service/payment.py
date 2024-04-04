@@ -53,14 +53,11 @@ def getCustomerInfo():
 ## FRONTEND TO CALL
 @app.route("/api/v1/create_payment_intent", methods=["POST"])
 def create_payment_intent():
-
     concert_id = request.json.get("concert_id", None)
     price = request.json.get("price", None)
 
     try:
-
         payment = stripe.PaymentIntent.create(amount=price * 100, currency="sgd")
-
         result = add_payment_intent(payment["id"], concert_id, payment["status"])
         print(payment["status"])
 

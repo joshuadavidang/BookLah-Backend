@@ -10,12 +10,13 @@ import uuid
 
 # /api/v1/getConcerts
 # /api/v1/getConcert/<string:concert_id>
-# /api/v1/isConcertSoldOut/<string:concert_id>
-# /api/v1/updateTicketStatus/<string:concert_id>
 # /api/v1/getAdminCreatedConcert/<string:userId>
 # /api/v1/addConcert/<string:concert_id>
 # /api/v1/updateConcertAvailability/<string:concert_id>
 # /api/v1/updateConcertDetails/<string:concert_id>
+# /api/v1/getAvailableConcerts
+
+
 class Concert(db.Model):
     __tablename__ = "concerts"
     concert_id = db.Column(db.String(100), primary_key=True)
@@ -27,7 +28,6 @@ class Concert(db.Model):
     capacity = db.Column(db.Integer, nullable=False)
     description = db.Column(db.String(1000), nullable=False)
     category = db.Column(db.String(100), nullable=False, default="category1")
-    sold_out = db.Column(db.Boolean, nullable=False, default=False)
     price = db.Column(db.INTEGER, nullable=False, default=0)
     concert_status = db.Column(
         Enum("AVAILABLE", "CANCELLED", name="concert_status_enum"),
@@ -78,7 +78,6 @@ class Concert(db.Model):
             "concert_status": self.concert_status,
             "description": self.description,
             "created_by": self.created_by,
-            "sold_out": self.sold_out,
         }
 
 
@@ -178,53 +177,6 @@ def getAvailableConcerts():
             },
         }
     )
-
-
-@app.route("/api/v1/updateTicketStatus/<string:concert_id>", methods=["PUT"])
-def updateTicketStatus(concert_id):
-    """
-    Update Ticket Status
-    isSoldOut = True if sold out
-    """
-
-    concert = db.session.query(Concert).filter_by(concert_id=concert_id).first()
-    if not concert:
-        return jsonify(
-            {
-                "code": 404,
-                "data": {"concert_id": concert_id},
-                "message": "Concert not found.",
-            }
-        )
-
-    isSoldOut = request.get_json()["isSoldOut"]
-
-    try:
-        db.session.query(Concert).filter_by(concert_id=concert_id).update(
-            {"sold_out": isSoldOut}
-        )
-        db.session.commit()
-        return (
-            jsonify(
-                {
-                    "code": 200,
-                    "data": {"concert_id": concert_id},
-                    "message": "Updated concert ticket status successfully.",
-                }
-            ),
-            200,
-        )
-    except:
-        return (
-            jsonify(
-                {
-                    "code": 500,
-                    "data": {"concert_id": concert_id},
-                    "message": "An error occurred while updating the ticket status",
-                }
-            ),
-            500,
-        )
 
 
 ################### ADMIN ENDPOINTS ######################
@@ -395,7 +347,9 @@ def getSeats():
 
 @app.route("/api/v1/getSeatsByConcertId/<string:concert_id>")
 def getSeatsByConcertId(concert_id):
-    seats_list = db.session.scalars(db.select(Seats).filter_by(concert_id=concert_id))
+    seats_list = db.session.scalars(
+        db.select(Seats).filter_by(concert_id=concert_id, is_taken=False)
+    ).all()
 
     if not seats_list:
         return jsonify({"code": 404, "message": "There are no seats available."}), 404
@@ -403,6 +357,14 @@ def getSeatsByConcertId(concert_id):
     return jsonify(
         {"code": 200, "data": {"seats": [seat.json() for seat in seats_list]}}
     )
+
+
+@app.route("/api/v1/countNumSeatsAvailable/<string:concert_id>")
+def countNumSeatsAvailable(concert_id):
+    seats_list = db.session.scalars(
+        db.select(Seats).filter_by(concert_id=concert_id, is_taken=False)
+    ).all()
+    return jsonify({"code": 200, "data": {"numSeatsAvailable": len(seats_list)}})
 
 
 @app.route("/api/v1/findBySeat/<string:concert_id>/<string:category>/<string:seat_no>")
@@ -469,7 +431,6 @@ def updateSeat():
     updated_seats = []
 
     for seat in seat_no:
-        print(seat)
         seat_obj = (
             db.session.query(Seats)
             .filter_by(concert_id=concert_id, category=category, seat_no=seat)

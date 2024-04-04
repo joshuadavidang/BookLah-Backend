@@ -1,13 +1,17 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os, sys
-from dotenv import load_dotenv
+
 from invokes import invoke_http
 import pika
 import json
 import amqp_connection
 
-load_dotenv()
+### Create Concert Complex Microservice 4
+# Concert microservice - Create a concert
+# Concert microservice - Create seats
+# Forum microservice - Create a forum
+###
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)

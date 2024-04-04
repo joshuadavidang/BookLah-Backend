@@ -1,18 +1,22 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os, sys
-from dotenv import load_dotenv
 from invokes import invoke_http
 import amqp_connection
 import pika
 import json
 
 
+### Get Forum Complex Microservice 3
+# Booking microservice - Retrieve list of users who booked the concert
+# Concert microservice - Retrieve list of available concerts, status != CANCELLED
+# Forum microservice - Retrieve list of forums that user has joined
+###
+
+
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
 PORT = 5300
-
-load_dotenv()
 
 
 booking_URL = "http://booking_service:5001/api/v1/get_user_bookings/"
