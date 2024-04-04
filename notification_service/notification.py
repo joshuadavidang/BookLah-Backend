@@ -10,6 +10,7 @@ CORS(app)
 # sslify = SSLify(app)
 MAILTRAP_API_KEY = environ.get("MAILTRAP_API_KEY")
 
+
 @app.route("/api/v1/send_email", methods=["POST"])
 def send_email():
     if request.method == "POST":
@@ -38,12 +39,13 @@ def send_email():
         except Exception as e:
             return jsonify({"code": 500, "message": str(e)})
 
+
 @app.route("/api/v1/send_refund_emails", methods=["POST"])
 def send_refund_emails():
     if request.method == "POST":
         data = request.get_json()
 
-        recipient_emails = data["recipient_email"] #array of emails
+        recipient_emails = data["recipient_email"]  # array of emails
         message = data.get("message")
         subject = data.get("subject")
 
@@ -53,7 +55,9 @@ def send_refund_emails():
         try:
             for email in recipient_emails:
                 mail = mt.Mail(
-                    sender=mt.Address(email="mailtrap@demomailtrap.com", name="BookLah"),
+                    sender=mt.Address(
+                        email="mailtrap@demomailtrap.com", name="BookLah"
+                    ),
                     to=[mt.Address(email=email)],
                     subject=subject,
                     text=message,

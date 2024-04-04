@@ -280,7 +280,6 @@ def processBookConcert(booking):
             body=message,
             properties=pika.BasicProperties(correlation_id=correlation_id),
         )
-
     print("\nNotification published to Exchange.\n")
 
     print("###### Booking Successful ######\n")

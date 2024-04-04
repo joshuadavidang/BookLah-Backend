@@ -45,7 +45,7 @@ def cancel_concert():
 
             # return jsonify(result), result["code"]
             return jsonify(result), result["code"]
-        
+
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -165,9 +165,7 @@ def process_cancel_concert(booking):
     print("Booking published to localhost Exchange.\n")
 
     print("\n-----Triggering refunds-----")
-    payment_result = invoke_http(
-        payment_URL + booking["concert_id"], method="POST"
-    )
+    payment_result = invoke_http(payment_URL + booking["concert_id"], method="POST")
     print("refund_result:", payment_result)
     code = payment_result["code"]
     message = json.dumps(payment_result)
@@ -204,12 +202,11 @@ def process_cancel_concert(booking):
 
     print("\nRefund published to localhost Exchange.\n")
 
-
     print("\n-----Notifying ticket holders-----")
     print(booking_result)
     booking_arr = booking_result["data"]["bookings"]
     email_arr = []
-    for booking_obj in booking_arr: 
+    for booking_obj in booking_arr:
         email = booking_obj["email"]
         email_arr.append(email)
 
@@ -237,7 +234,7 @@ def process_cancel_concert(booking):
             body=message,
             properties=pika.BasicProperties(delivery_mode=2),
         )
-        
+
         print(
             "\nNotification status ({:d}) published to the RabbitMQ Exchange:".format(
                 code
@@ -250,7 +247,7 @@ def process_cancel_concert(booking):
             "data": {"notification_result": notification_result},
             "message": "Notification creation failure sent for error handling.",
         }
-    
+
     else:
         print(
             "\n\n-----Publishing the (notification info) message with routing_key= notification.info-----"
