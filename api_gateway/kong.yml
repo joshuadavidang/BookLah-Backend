@@ -11,8 +11,9 @@ services:
           - /auth
 
   ##### CONCERT MICROSERVICE #####
-  - name: concert_service
-    url: http://host.docker.internal:5002/
+  - host: concert_upstream
+    name: concert_service
+    protocol: http
     routes:
       - name: concert_service_route
         paths:
@@ -27,20 +28,31 @@ services:
           - /payment
 
   ##### FORUM MICROSERVICE #####
-  - name: forum_service
-    url: http://host.docker.internal:5007/
+  - host: forum_upstream
+    name: forum_service
+    protocol: http
     routes:
       - name: forum_service_route
         paths:
           - /forum
 
   ##### BOOKING MICROSERVICE #####
-  - name: booking_service
-    url: http://host.docker.internal:5001/
+  - host: booking_upstream
+    name: booking_service
+    protocol: http
     routes:
       - name: booking_service_route
         paths:
           - /booking
+
+
+    # plugins:
+    #     - name: acl
+    #       config:
+    #         allow:
+    #           - admingroup
+    #         deny:
+    #           - usergroup
 
   ##### COMPLEX MICROSERVICES #####
   - name: book_concert
@@ -79,8 +91,49 @@ services:
         methods:
           - POST
 
-#### [!] TODO: Commented out for development purpose, to be enabled in production ####
-plugins:
+consumers:
+  - username: admin
+    custom_id: custom_id123
+  - username: user
+    custom_id: custom_idabc
+
+keyauth_credentials:
+  - consumer: admin
+    key: admin
+  - consumer: user
+    key: user
+
+# acls:
+# - consumer: admin
+#   group: admingroup
+# - consumer: user
+#   group: usergroup
+#  tags: { tag1 }
+
+
+upstreams:
+- name: booking_upstream
+  targets: 
+    - target: booking_service:5001
+      weight: 50
+    - target: booking_service2:5001
+      weight: 50
+
+- name: concert_upstream
+  targets: 
+    - target: concert_service:5002
+      weight: 50
+    - target: concert_service2:5002
+      weight: 50
+
+- name: forum_upstream
+  targets: 
+    - target: forum_service:5007
+      weight: 50
+    - target: forum_service2:5007
+      weight: 50
+
+  #### [!] TODO: Commented out for development purpose, to be enabled in production ####
   # - name: proxy-cache
   #   config:
   #     response_code:
@@ -92,7 +145,7 @@ plugins:
   #       - application/json
   #     cache_ttl: 300
   #     strategy: memory
-
+plugins:
   - name: cors
     config:
       origins:
@@ -114,3 +167,20 @@ plugins:
         - X-Auth-Token
       credentials: true
       max_age: 3600
+
+  - name: key-auth
+    config:
+      key_names:
+        - apikey
+
+#   - name: acl
+#     config:
+#       allow:
+#         - admingroup
+#       hide_groups_header: true
+
+  - name: bot-detection
+    #### [!] TODO: Uncomment for demo!
+    # config:
+    #   deny:
+    #     - "(C|c)hrome"
