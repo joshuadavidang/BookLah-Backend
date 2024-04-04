@@ -177,7 +177,6 @@ services:
   activity_log:
     build:
       context: ./activity_log_service
-      dockerfile: activity_log.Dockerfile
     container_name: activity_log_service
     restart: always
     depends_on:
@@ -194,7 +193,6 @@ services:
   error:
     build:
       context: ./error_service
-      dockerfile: error.Dockerfile
     container_name: error_service
     restart: always
     depends_on:
