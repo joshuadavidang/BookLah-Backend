@@ -1,11 +1,16 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os, sys
-import requests
 from invokes import invoke_http
 import pika
 import json
 import amqp_connection
+
+### Cancel Concert Complex Microservice 2
+# Concert microservice - Update concert status to CANCELLED
+# Booking microservice - Retrieve list of users who have made bookings to trigger refund
+# Notification microservice - Send email to notify ticket holders
+###
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
@@ -215,7 +220,7 @@ def process_cancel_concert(booking):
     data = {
         "recipient_email": email_arr,
         "subject": "[Alert]",
-        "message": "Order has been cancelled",
+        "message": "Order has been cancelled. We've processed a refund.",
     }
 
     notification_result = invoke_http(notification_URL, method="POST", json=data)
