@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os, sys
-from os import environ
 from dotenv import load_dotenv
 from invokes import invoke_http
 import pika
@@ -22,8 +21,8 @@ notification_URL = "http://notification_service:5003/api/v1/send_email"
 activity_log_URL = "http://activity_log_service:5004/api/v1/activity_log"
 error_URL = "http://error_service:5005/api/v1/error"
 
-exchangename = environ.get("EXCHANGE_NAME_BOOK_CONCERT")
-exchangetype = environ.get("EXCHANGE_TYPE_BOOK_CONCERT")
+exchangename = "booking_topic"
+exchangetype = "topic"
 connection = amqp_connection.create_connection()
 channel = connection.channel()
 

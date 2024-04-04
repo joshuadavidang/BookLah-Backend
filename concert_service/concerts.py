@@ -5,17 +5,17 @@ from datetime import datetime
 from sqlalchemy.orm import relationship
 import uuid
 
+######## 8 ENDPOINTS ########
 
-######## 7 ENDPOINTS ########
+
 # /api/v1/getConcerts
 # /api/v1/getConcert/<string:concert_id>
+# /api/v1/isConcertSoldOut/<string:concert_id>
 # /api/v1/updateTicketStatus/<string:concert_id>
 # /api/v1/getAdminCreatedConcert/<string:userId>
 # /api/v1/addConcert/<string:concert_id>
 # /api/v1/updateConcertAvailability/<string:concert_id>
 # /api/v1/updateConcertDetails/<string:concert_id>
-
-
 class Concert(db.Model):
     __tablename__ = "concerts"
     concert_id = db.Column(db.String(100), primary_key=True)
@@ -152,6 +152,32 @@ def getConcert(concert_id):
         return jsonify({"code": 404, "message": "concert not found."}), 404
 
     return jsonify({"code": 200, "data": concert.json()})
+
+
+@app.route("/api/v1/getAvailableConcerts", methods=["POST"])
+def getAvailableConcerts():
+    data = request.get_json()
+    concert_arr = data.get("concerts")
+    available_concerts = []
+
+    if len(concert_arr) == 0:
+        return jsonify({"code": 400, "message": "no available concerts."})
+
+    for concert in concert_arr:
+        concert_obj = getConcert(concert).json
+        status = concert_obj["data"]["concert_status"]
+
+        if status == "AVAILABLE":
+            available_concerts.append(concert)
+
+    return jsonify(
+        {
+            "code": 200,
+            "data": {
+                "available_concerts": available_concerts,
+            },
+        }
+    )
 
 
 @app.route("/api/v1/updateTicketStatus/<string:concert_id>", methods=["PUT"])
