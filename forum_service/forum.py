@@ -389,9 +389,24 @@ def get_forum_by_userId(user_id):
 def get_forum(concert_id):
     forum = Forums.query.get(concert_id)
     if forum:
-        return jsonify({"code": 200, "data": forum.json()}), 200
+        return jsonify({"code": 200, "data": forum.json()})
     else:
-        return jsonify({"code": 404, "message": "Forum not found."}), 404
+        return jsonify({"code": 404, "message": "Forum not found."})
+
+
+@app.route("/api/v1/getUserForums", methods=["POST"])
+def get_user_forums():
+    data = request.get_json()
+    forum_arr = []
+    concert_arr = data.get("available_concerts")
+    for concert in concert_arr:
+        forum = get_forum(concert).json
+        if forum["code"] in range(200, 300):
+            forum_arr.append(forum["data"])
+        else:
+            return jsonify({"code": 404, "message": "Cannot find forum."})
+
+    return jsonify({"code": 200, "data": forum_arr})
 
 
 @app.route("/api/v1/updateForum/<string:concert_id>", methods=["PUT"])
