@@ -15,7 +15,7 @@ app = Flask(__name__)
 CORS(app, supports_credentials=True)
 PORT = 5100
 
-concert_URL = "http://concert_service:5002/api/v1/isConcertSoldOut/"
+concert_URL = "http://concert_service:5002/api/v1/getConcert/"
 seat_url = "http://concert_service:5002/api/v1/updateSeat"
 booking_URL = "http://booking_service:5001/api/v1/create_booking"
 notification_URL = "http://notification_service:5003/api/v1/send_email"
@@ -113,7 +113,6 @@ def processBookConcert(booking):
             "data": {"concert_result": concert_result},
             "message": "Simulated event error sent for error handling.",
         }
-    
     elif concert_result["data"]["sold_out"]:
         print(
             "\n\n-----Publishing the (concert error) message with routing_key=concert.error-----"
@@ -131,15 +130,14 @@ def processBookConcert(booking):
             concert_result,
         )
 
-        return  {
-                    "code": 400,
-                    "data": {
-                        "concert_result": concert_result,
-                    },
-                    "message": "Concert has sold out."
-                }
+        return {
+            "code": 400,
+            "data": {
+                "concert_result": concert_result,
+            },
+            "message": "Concert has sold out.",
+        }
     else:
-        
 
         print(
             "\n\n-----Publishing the (concert info) message with routing_key=concert.info-----"
@@ -149,7 +147,6 @@ def processBookConcert(booking):
         )
 
     print("\Concert published to localhost Exchange.\n")
-
 
     print("\n-----Invoking booking microservice-----")
     # takes json from frontend and creates a booking
@@ -278,10 +275,12 @@ def processBookConcert(booking):
         correlation_id = str(uuid.uuid4())
 
         channel.basic_publish(
-            exchange=exchangename, routing_key="notification.info", body=message, 
-            properties=pika.BasicProperties(correlation_id=correlation_id)
+            exchange=exchangename,
+            routing_key="notification.info",
+            body=message,
+            properties=pika.BasicProperties(correlation_id=correlation_id),
         )
-        
+
     print("\nNotification published to Exchange.\n")
 
     print("###### Booking Successful ######\n")

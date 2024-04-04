@@ -1,13 +1,13 @@
 from flask import request, jsonify
-from flask_sqlalchemy import SQLAlchemy
 import uuid
 from dbConfig import app, db, PORT
 
-######## 3 ENDPOINTS ########
+######## 4 ENDPOINTS ########
 
 # /api/v1/get_bookings
 # /api/v1/get_booking/<string:booking_id>
 # /api/v1/create_booking
+# /api/v1/update_forum_joined
 
 
 class Booking(db.Model):
@@ -57,12 +57,13 @@ def find_booking_by_id(booking_id):
     if booking:
         return jsonify({"code": 200, "data": booking.json()})
     return jsonify(
-            {
-                "code": 404,
-                "data": {"booking_id": booking_id},
-                "message": "Booking not found.",
-            }
-        )
+        {
+            "code": 404,
+            "data": {"booking_id": booking_id},
+            "message": "Booking not found.",
+        }
+    )
+
 
 @app.route("/api/v1/get_concert_bookings/<string:concert_id>", methods=["GET"])
 def get_concert_bookings(concert_id):
@@ -74,7 +75,9 @@ def get_concert_bookings(concert_id):
                 "data": {"bookings": [booking.json() for booking in booking_list]},
             }
         )
-    return jsonify({"code": 404, "message": f"No bookings found for concert ID: {concert_id}"})
+    return jsonify(
+        {"code": 404, "message": f"No bookings found for concert_id: {concert_id}"}
+    )
 
 
 @app.route("/api/v1/get_user_bookings/<string:user_id>", methods=["GET"])
@@ -87,7 +90,9 @@ def get_bookings_by_user(user_id):
                 "data": {"bookings": [booking.json() for booking in booking_list]},
             }
         )
-    return jsonify({"code": 404, "message": f"No bookings found for user ID: {user_id}"})
+    return jsonify(
+        {"code": 404, "message": f"No bookings found for user_id: {user_id}"}
+    )
 
 
 @app.route("/api/v1/create_booking", methods=["POST"])
@@ -100,11 +105,51 @@ def create_booking():
         return jsonify({"code": 201, "data": booking.json()}), 201
     except Exception as e:
         return jsonify(
-                {
-                    "code": 500,
-                    "message": f"An error occurred while creating the booking: {str(e)}",
-                }
+            {
+                "code": 500,
+                "message": f"An error occurred while creating the booking: {str(e)}",
+            }
+        )
+
+
+@app.route("/api/v1/update_forum_joined", methods=["PUT"])
+def update_forum_joined():
+    data = request.get_json()
+    concert_id = data.get("concert_id")
+    user_id = data.get("user_id")
+    forum_joined = data.get("forum_joined")
+
+    forum_arr = (
+        db.session.query(Booking)
+        .filter_by(concert_id=concert_id, user_id=user_id)
+        .all()
+    )
+
+    for forum in forum_arr:
+        try:
+            forum.forum_joined = forum_joined
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return (
+                jsonify(
+                    {
+                        "code": 500,
+                        "data": {"forum_joined": forum_joined},
+                        "message": "An error occurred while updating forum joined status: "
+                        + str(e),
+                    }
+                ),
+                500,
             )
+
+    return jsonify(
+        {
+            "code": 200,
+            "data": {"concert_id": concert_id, "forum_joined": forum_joined},
+            "message": "Successfully updated forum joined status",
+        }
+    )
 
 
 if __name__ == "__main__":

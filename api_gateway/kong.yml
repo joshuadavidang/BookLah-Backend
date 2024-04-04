@@ -44,53 +44,54 @@ services:
 
   ##### COMPLEX MICROSERVICES #####
   - name: book_concert
-    url: http://host.docker.internal:5100/api/v1/book_concert
+    url: http://host.docker.internal:5100/
     routes:
       - name: book_concert_route
         paths:
-          - /api/v1/book_concert
+          - /booking
         methods:
           - POST
 
   - name: cancel_booking
-    url: http://host.docker.internal:5200/api/v1/cancel_concert
+    url: http://host.docker.internal:5200/
     routes:
       - name: cancel_booking_route
         paths:
-          - /api/v1/cancel_concert
+          - /cancel
         methods:
           - POST
 
   - name: forum_complex
-    url: http://host.docker.internal:5300/api/v1/get_forum
+    url: http://host.docker.internal:5300/
     routes:
       - name: get_forum_route
         paths:
-          - /api/v1/get_forum
+          - /forum
         methods:
           - POST
 
   - name: create_concert
-    url: http://host.docker.internal:5400/api/v1/create_concert
+    url: http://host.docker.internal:5400/
     routes:
       - name: create_concert_route
         paths:
-          - /api/v1/create_concert
+          - /concert
         methods:
           - POST
 
+#### [!] TODO: Commented out for development purpose, to be enabled in production ####
 plugins:
-  - name: proxy-cache
-    config:
-      response_code:
-        - 200
-      request_method:
-        - GET
-      content_type:
-        - text/plain
-        - application/json
-      cache_ttl: 300
-      strategy: memory
+  # - name: proxy-cache
+  #   config:
+  #     response_code:
+  #       - 200
+  #     request_method:
+  #       - GET
+  #     content_type:
+  #       - text/plain
+  #       - application/json
+  #     cache_ttl: 300
+  #     strategy: memory
 
   - name: cors
     config:

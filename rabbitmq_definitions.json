@@ -49,6 +49,13 @@
       "durable": true,
       "auto_delete": false,
       "arguments": {}
+    },
+    {
+      "name": "notification_queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
     }
   ],
   "exchanges": [
@@ -81,6 +88,15 @@
     },
     {
       "name": "concert_topic",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "notification_topic",
       "vhost": "/",
       "type": "topic",
       "durable": true,
@@ -148,6 +164,30 @@
     },
     {
       "source": "concert_topic",
+      "vhost": "/",
+      "destination": "Error",
+      "destination_type": "queue",
+      "routing_key": "*.error",
+      "arguments": {}
+    },
+    {
+      "source": "notification_topic",
+      "vhost": "/",
+      "destination": "notification_queue",
+      "destination_type": "queue",
+      "routing_key": "notification.info",
+      "arguments": {}
+    },
+    {
+      "source": "notification_topic",
+      "vhost": "/",
+      "destination": "Activity_Log",
+      "destination_type": "queue",
+      "routing_key": "#",
+      "arguments": {}
+    },
+    {
+      "source": "notification_topic",
       "vhost": "/",
       "destination": "Error",
       "destination_type": "queue",

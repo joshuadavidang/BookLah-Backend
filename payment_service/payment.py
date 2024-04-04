@@ -23,24 +23,6 @@ stripe.api_key = app.config["STRIPE_SECRET_KEY"]
 FRONT_END_DOMAIN = "http://localhost:3000"
 
 
-class StripeIds(db.Model):
-    __tablename__ = "payment"
-    concert_id = db.Column(db.String(100), primary_key=True)
-    category = db.Column(db.String(100), primary_key=True)
-    concert_name = db.Column(db.String(100), nullable=False)
-    price_id = db.Column(db.String(100), nullable=False)
-    product_id = db.Column(db.String(100), nullable=False)
-
-    def json(self):
-        return {
-            "concert_id": self.concert_id,
-            "category": self.category,
-            "concert_name": self.concert_name,
-            "price_id": self.price_id,
-            "product_id": self.product_id,
-        }
-
-
 class PaymentIntent(db.Model):
     __tablename__ = "payment_intent"
     payment_intent = db.Column(db.String(100), primary_key=True)
@@ -231,23 +213,6 @@ def add_payment_intent(payment_intent, concert_id):
             "message": "Payment Intent have been added successfully",
         }
     )
-
-
-## ADMIN
-# create stripe ids from Stripe
-def create_stripeids(product_name, price):
-
-    price = stripe.Price.create(
-        currency="sgd",
-        unit_amount=price * 100,  # in cents
-        product_data={"name": product_name},
-    )
-
-    return {
-        "code": 201,
-        "data": {"price_id": price["id"], "product_id": price["product"]},
-        "message": "Stripe IDs created successfully",
-    }
 
 
 ## REFUND
