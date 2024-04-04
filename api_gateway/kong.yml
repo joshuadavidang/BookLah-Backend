@@ -45,15 +45,6 @@ services:
         paths:
           - /booking
 
-
-    # plugins:
-    #     - name: acl
-    #       config:
-    #         allow:
-    #           - admingroup
-    #         deny:
-    #           - usergroup
-
   ##### COMPLEX MICROSERVICES #####
   - name: book_concert
     url: http://host.docker.internal:5100/
@@ -63,6 +54,11 @@ services:
           - /booking
         methods:
           - POST
+    plugins:
+      - name: acl
+        config:
+          allow:
+            - usergroup
 
   - name: cancel_booking
     url: http://host.docker.internal:5200/
@@ -81,6 +77,11 @@ services:
           - /forum
         methods:
           - POST
+    plugins:
+      - name: acl
+        config:
+          allow:
+            - usergroup
 
   - name: create_concert
     url: http://host.docker.internal:5400/
@@ -91,25 +92,27 @@ services:
         methods:
           - POST
 
+##################################################
+
 consumers:
-  - username: admin
-    custom_id: custom_id123
-  - username: user
-    custom_id: custom_idabc
+  - username: ADMIN
+    custom_id: ADMIN123
+  - username: USER
+    custom_id: USER123
 
 keyauth_credentials:
-  - consumer: admin
-    key: admin
-  - consumer: user
-    key: user
+  - consumer: ADMIN
+    key: ADMIN
+  - consumer: USER
+    key: USER
 
-# acls:
-# - consumer: admin
-#   group: admingroup
-# - consumer: user
-#   group: usergroup
-#  tags: { tag1 }
+acls:
+  - consumer: ADMIN
+    group: admingroup
+  - consumer: USER
+    group: usergroup
 
+##################################################
 
 upstreams:
 - name: booking_upstream
@@ -173,11 +176,11 @@ plugins:
       key_names:
         - apikey
 
-#   - name: acl
-#     config:
-#       allow:
-#         - admingroup
-#       hide_groups_header: true
+  - name: acl
+    config:
+      deny:
+        - usergroup
+      hide_groups_header: true
 
   - name: bot-detection
     #### [!] TODO: Uncomment for demo!
