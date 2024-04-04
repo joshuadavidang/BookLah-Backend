@@ -17,7 +17,7 @@ services:
     routes:
       - name: concert_service_route
         paths:
-          - /concert
+          - /concert/*
 
   ##### PAYMENT MICROSERVICE #####
   - name: payment_service
@@ -34,7 +34,7 @@ services:
     routes:
       - name: forum_service_route
         paths:
-          - /forum
+          - /forum/*
 
   ##### BOOKING MICROSERVICE #####
   - host: booking_upstream
@@ -43,7 +43,7 @@ services:
     routes:
       - name: booking_service_route
         paths:
-          - /booking
+          - /booking/*
 
   ##### COMPLEX MICROSERVICES #####
   - name: book_concert
@@ -54,11 +54,6 @@ services:
           - /booking
         methods:
           - POST
-    plugins:
-      - name: acl
-        config:
-          allow:
-            - usergroup
 
   - name: cancel_booking
     url: http://host.docker.internal:5200/
@@ -77,11 +72,6 @@ services:
           - /forum
         methods:
           - POST
-    plugins:
-      - name: acl
-        config:
-          allow:
-            - usergroup
 
   - name: create_concert
     url: http://host.docker.internal:5400/
@@ -91,26 +81,6 @@ services:
           - /concert
         methods:
           - POST
-
-##################################################
-
-consumers:
-  - username: ADMIN
-    custom_id: ADMIN123
-  - username: USER
-    custom_id: USER123
-
-keyauth_credentials:
-  - consumer: ADMIN
-    key: ADMIN
-  - consumer: USER
-    key: USER
-
-acls:
-  - consumer: ADMIN
-    group: admingroup
-  - consumer: USER
-    group: usergroup
 
 ##################################################
 
@@ -175,12 +145,6 @@ plugins:
     config:
       key_names:
         - apikey
-
-  - name: acl
-    config:
-      deny:
-        - usergroup
-      hide_groups_header: true
 
   - name: bot-detection
     #### [!] TODO: Uncomment for demo!
