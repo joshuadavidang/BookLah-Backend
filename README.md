@@ -11,7 +11,7 @@
 1. Clone the project
 
    ```
-   git clone https://github.com/joshuadavidang/BookLah
+   git clone https://github.com/joshuadavidang/BookLah-Backend
    ```
 
 2. Install dependencies
@@ -33,4 +33,4 @@
    ```
 
 ##
-G10 Team 5
+G10T5
